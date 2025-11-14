@@ -22,7 +22,8 @@ services:
       - POSTGRES_PASSWORD=PostgresServer
     depends_on:
       # 确保在启动此服务前，数据库服务已准备就绪
-      - postgres-db
+      postgres-db:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -67,6 +68,12 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      # 数据库健康检查
+      test: ["CMD-SHELL", "pg_isready -U DBManager -d PlazaDB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 # 定义网络
 networks:
