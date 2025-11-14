@@ -1,0 +1,30 @@
+# Python 缓存文件
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Python 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 打包和分发目录
+build/
+dist/
+*.egg-info/
+
+# 用户个人配置和缓存
+.vs/
+obj/
+*.pyproj.user
+.vscode/
+
+# 环境变量文件 (密码、密钥等)
+.env
+.env.*
+!.env.example
+
+.DS_Store
+Thumbs.db
