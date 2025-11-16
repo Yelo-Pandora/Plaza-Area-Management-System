@@ -26,6 +26,9 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    volumes:
+      # 将本地的后端代码目录精确地挂载到容器的工作目录
+      - ./python-backend/python-backend:/app
 
 
   # 前端服务 (Vue.js + Nginx)

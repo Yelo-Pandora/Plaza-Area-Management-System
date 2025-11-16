@@ -19,7 +19,12 @@ dist/
 .vs/
 obj/
 *.pyproj.user
+*.sln
+*.pyproj
+Properties/
+bin/
 .vscode/
+
 
 # 环境变量文件 (密码、密钥等)
 .env
