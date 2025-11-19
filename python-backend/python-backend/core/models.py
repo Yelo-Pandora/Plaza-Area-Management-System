@@ -35,24 +35,24 @@ class Event(models.Model):
 
 
 class EventEventarea(models.Model):
-    # pk = models.CompositePrimaryKey('event_id', 'eventarea_id')
+    pk = models.CompositePrimaryKey('event_id', 'eventarea_id')
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     eventarea = models.ForeignKey('Eventarea', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'event_eventarea'
         managed = False
-        unique_together = (('event', 'eventarea'),)
+        # unique_together = (('event', 'eventarea'),)
 
 
 class EventStorearea(models.Model):
-    # pk = models.CompositePrimaryKey('event_id', 'storearea_id')
+    pk = models.CompositePrimaryKey('event_id', 'storearea_id')
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     storearea = models.ForeignKey('Storearea', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'event_storearea'
-        unique_together = (('event', 'storearea'),)
+        # unique_together = (('event', 'storearea'),)
         managed = False
 
 
@@ -70,13 +70,13 @@ class Eventarea(models.Model):
 
 
 class EventareaMap(models.Model):
-    # pk = models.CompositePrimaryKey('eventarea_id', 'map_id')
+    pk = models.CompositePrimaryKey('eventarea_id', 'map_id')
     eventarea = models.ForeignKey(Eventarea, on_delete=models.CASCADE)
     map = models.ForeignKey('Map', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'eventarea_map'
-        unique_together = (('eventarea', 'map'),)
+        # unique_together = (('eventarea', 'map'),)
         managed = False
 
 
@@ -92,13 +92,13 @@ class Facility(models.Model):
 
 
 class FacilityMap(models.Model):
-    # pk = models.CompositePrimaryKey('facility_id', 'map_id')
+    pk = models.CompositePrimaryKey('facility_id', 'map_id')
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE)
     map = models.ForeignKey('Map', on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'facility_map'
-        unique_together = (('facility', 'map'),)
+        # unique_together = (('facility', 'map'),)
         managed = False
 
 
@@ -126,14 +126,14 @@ class Otherarea(models.Model):
 
 
 class OtherareaMap(models.Model):
-    # pk = models.CompositePrimaryKey('otherarea_id', 'map_id')
+    pk = models.CompositePrimaryKey('otherarea_id', 'map_id')
     otherarea = models.ForeignKey(Otherarea, on_delete=models.CASCADE)
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'otherarea_map'
         managed = False
-        unique_together = (('otherarea', 'map'),)
+        # unique_together = (('otherarea', 'map'),)
 
 
 class Storearea(models.Model):
@@ -155,11 +155,11 @@ class Storearea(models.Model):
 
 
 class StoreareaMap(models.Model):
-    # pk = models.CompositePrimaryKey('storearea_id', 'map_id')
+    pk = models.CompositePrimaryKey('storearea_id', 'map_id')
     storearea = models.ForeignKey(Storearea, on_delete=models.CASCADE)
     map = models.ForeignKey(Map, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'storearea_map'
-        unique_together = (('storearea', 'map'),)
+        # unique_together = (('storearea', 'map'),)
         managed = False

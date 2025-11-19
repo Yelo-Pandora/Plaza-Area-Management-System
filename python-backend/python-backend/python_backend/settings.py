@@ -38,7 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    "core",
+    'core.apps.CoreConfig',
+    'map.apps.MapConfig',
+    'client.apps.ClientConfig',
+    'management.apps.ManagementConfig'
 ]
 
 # Middleware framework
