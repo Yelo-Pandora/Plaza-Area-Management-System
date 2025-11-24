@@ -38,10 +38,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'rest_framework',
+    'django_filters',
     'core.apps.CoreConfig',
     'map.apps.MapConfig',
     'client.apps.ClientConfig',
-    'management.apps.ManagementConfig'
+    'management.apps.ManagementConfig',
+    'search.apps.SearchConfig',
+    'guide.apps.GuideConfig',
+    'editor.apps.EditorConfig'
 ]
 
 # Middleware framework
@@ -120,3 +125,25 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 STATIC_URL = '/static/'
 STATIC_ROOT = posixpath.join(*(BASE_DIR.split(os.path.sep) + ['static']))
+
+REST_FRAMEWORK = {
+    # 默认权限设置：这里设置为默认需要登录才能访问，方便后续开发
+    'DEFAULT_PERMISSION_CLASSES': [
+        # 'rest_framework.permissions.IsAuthenticated',
+        # 如果是开发初期想全部公开，可以改为:
+        'rest_framework.permissions.AllowAny',
+    ],
+
+    # 默认认证方式
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+
+    # 默认分页设置 (推荐配置，防止大数据量查死数据库)
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+
+    # 统一日期格式 (可选)
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+}
