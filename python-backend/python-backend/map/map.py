@@ -1,5 +1,5 @@
 from core.models import *
-
+from .models import MapContext
 class MapServices:
     def __init__(self):
-        pass
+        self.context = MapContext()
