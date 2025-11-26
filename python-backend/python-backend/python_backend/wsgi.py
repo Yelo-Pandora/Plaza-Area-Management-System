@@ -17,11 +17,14 @@ https://docs.djangoproject.com/en/2.1/howto/deployment/wsgi/
 """
 
 import os
+
+import django
 from django.core.wsgi import get_wsgi_application
 
 os.environ.setdefault(
     'DJANGO_SETTINGS_MODULE',
     'python_backend.settings')
+django.setup()
 
 # This application object is used by any WSGI server configured to use this
 # file. This includes Django's development server, if the WSGI_APPLICATION
