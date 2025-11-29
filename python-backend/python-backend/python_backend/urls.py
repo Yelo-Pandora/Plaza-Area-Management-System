@@ -17,10 +17,15 @@ Including another URLconf
 """
 
 # Uncomment next two lines to enable admin:
-#from django.contrib import admin
-#from django.urls import path
+from django.contrib import admin
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
+from map.views import MapViewSet
 
+router = DefaultRouter()
+router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
     # Uncomment the next line to enable the admin:
     #path('admin/', admin.site.urls)
+    path('', include(router.urls)),
 ]
