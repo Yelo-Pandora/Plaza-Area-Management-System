@@ -20,12 +20,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
-from map.views import MapViewSet
+from map.views import MapViewSet, MapValidationView
 
 router = DefaultRouter()
 router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
     # Uncomment the next line to enable the admin:
     #path('admin/', admin.site.urls)
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
+    path('api/maps/validate/', MapValidationView.as_view(), name='map-validate'),
 ]

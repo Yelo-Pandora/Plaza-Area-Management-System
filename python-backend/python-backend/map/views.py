@@ -1,49 +1,71 @@
 from rest_framework import viewsets, status
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from .services import MapServices
-from .serializers import MapSerializer
+from django.contrib.gis.geos import GEOSGeometry
+import json
+
+from .serializers import MapSerializer  # 序列化器依然需要，用于格式化输出
+from map.services import MapDisplayService
 
 
 class MapViewSet(viewsets.ViewSet):
     """
-    一个简单的 ViewSet，用于列出地图信息。
-    不使用 ModelViewSet 也是为了演示如何手动连接 Service 层。
+    只读 ViewSet，不继承 ModelViewSet
     """
-
-    # 初始化 Service
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.service = MapServices()
+    service_class = MapDisplayService
 
     def list(self, request):
-        """
-        GET /api/maps/
-        返回所有地图列表
-        """
-        # 1. 从 Service 获取数据
-        maps = self.service.get_map_list()
+        """GET /api/maps/"""
+        service = self.service_class()
 
-        # 2. 使用 Serializer 序列化数据
+        # 1. 调用 Service 获取列表
+        maps = service.get_map_list()
+
+        # 2. 序列化返回
+        # 注意：这里会返回所有地图的 GeoJSON，数据量可能较大
+        # 实际生产中建议单独定义一个 SimpleMapSerializer (不含 detail_geojson) 用于列表
         serializer = MapSerializer(maps, many=True)
 
-        # 3. 返回 HTTP 响应
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        """
-        GET /maps/{id}/
-        获取单个地图详情
-        """
-        # 1. 调用 Service 获取对象
-        map_obj = self.service.get_single_map(pk)
+        """GET /api/maps/{id}/"""
+        service = self.service_class()
 
-        # 2. 如果找不到，返回 404
-        if map_obj is None:
-            return Response(
-                {"error": "Map not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        # 1. 调用 Service 获取组装好的对象
+        map_data = service.get_full_map_details(pk)
 
-        # 3. 序列化并返回 (注意这里 many=False，因为只是一个对象)
-        serializer = MapSerializer(map_obj)
+        if not map_data:
+            return Response({"error": "Map not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # 2. 使用 Serializer 格式化 Service 返回的数据
+        # 注意：Serializer 内部字段 source='temp_stores' 需要对应 Service 挂载的属性
+        serializer = MapSerializer(map_data)
         return Response(serializer.data)
+
+
+class MapValidationView(APIView):
+    """POST /api/maps/validate/"""
+    service_class = MapDisplayService
+
+    def post(self, request):
+        service = self.service_class()
+
+        # 1. 参数提取
+        geometry_data = request.data.get('geometry')
+        map_id = request.data.get('map_id')
+        area_type = request.data.get('type')
+        exclude_id = request.data.get('exclude_id')
+
+        # 2. 数据预处理
+        try:
+            shape_str = json.dumps(geometry_data) if isinstance(geometry_data, dict) else geometry_data
+            shape = GEOSGeometry(shape_str)
+            if shape.srid != 2385: shape.srid = 2385
+        except Exception:
+            return Response({"error": "Invalid Geometry"}, status=400)
+
+        # 3. 调用 Service 业务逻辑
+        is_valid, reason = service.validate_geometry(shape, map_id, exclude_id, area_type)
+
+        return Response({"valid": is_valid, "reason": reason})
