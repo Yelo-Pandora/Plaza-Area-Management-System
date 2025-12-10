@@ -48,7 +48,8 @@ class MapViewSetTestCase(APITestCase):
             type=1,
             shape=store_shape,
             owner_name="张三",
-            owner_phone="123456"
+            owner_phone="123456",
+            is_active = True
         )
 
         # 4. 关联商铺到地图 (重要：否则 retrieve 接口不会返回该商铺)
@@ -58,8 +59,8 @@ class MapViewSetTestCase(APITestCase):
         )
 
         # 路由名称定义 (对应 urls.py 中的 router.register(..., basename='maps'))
-        self.list_url = reverse('maps-list')
-        self.detail_url = reverse('maps-detail', args=[self.map_obj.id])
+        self.list_url = reverse('map-list')
+        self.detail_url = reverse('map-detail', args=[self.map_obj.id])
 
     def test_list_maps(self):
         """
@@ -121,7 +122,7 @@ class MapViewSetTestCase(APITestCase):
         """
         测试获取不存在的地图 ID
         """
-        non_existent_url = reverse('maps-detail', args=[99999])
+        non_existent_url = reverse('map-detail', args=[99999])
         response = self.client.get(non_existent_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
