@@ -27,6 +27,6 @@ router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
     # Uncomment the next line to enable the admin:
     #path('admin/', admin.site.urls)
-    path('api/', include(router.urls)),
     path('api/maps/validate/', MapValidationView.as_view(), name='map-validate'),
+    path('api/', include(router.urls)),
 ]
