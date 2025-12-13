@@ -1,5 +1,4 @@
-from django.contrib.gis.geos import GEOSGeometry
-from core.models import Map, Storearea, Facility, Otherarea, Eventarea, StoreareaMap, FacilityMap, OtherareaMap, EventareaMap
+from core.models import Map, Storearea, Facility, Otherarea, Eventarea
 from django.db.models import Q
 from core.context import BaseContext
 
@@ -15,7 +14,8 @@ class MapContext(BaseContext):
         except self.model.DoesNotExist:
             return None
 
-    def get_map_elements(self, map_obj):
+    @staticmethod
+    def get_map_elements(map_obj):
         """一次性获取地图关联的所有元素 ID"""
         # 注意：这里只负责取数据，不负责格式化
         store_ids = map_obj.storeareamap_set.values_list('storearea_id', flat=True)
@@ -33,19 +33,19 @@ class ElementContext:
 
     @staticmethod
     def get_stores_by_ids(ids):
-        return Storearea.objects.filter(id__in=ids, is_active=True)
+        return Storearea.objects.filter(id__in=ids)
 
     @staticmethod
     def get_facilities_by_ids(ids):
-        return Facility.objects.filter(id__in=ids, is_active=True)
+        return Facility.objects.filter(id__in=ids)
 
     @staticmethod
     def get_others_by_ids(ids):
-        return Otherarea.objects.filter(id__in=ids, is_active=True)
+        return Otherarea.objects.filter(id__in=ids)
 
     @staticmethod
     def get_events_by_ids(ids):
-        return Eventarea.objects.filter(id__in=ids, is_active=True)
+        return Eventarea.objects.filter(id__in=ids)
 
     @staticmethod
     def search_globally(keyword):
