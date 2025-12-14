@@ -13,9 +13,10 @@ class OtherareaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Otherarea
         # 将 is_public 暴露出来，前端可以用不同颜色渲染
-        fields = ['id', 'type', 'description', 'is_public', 'geometry']
+        fields = ['id', 'type', 'description', 'is_public',  'is_active', 'geometry']
 
-    def get_geometry(self, obj):
+    @staticmethod
+    def get_geometry(obj):
         if not obj.shape: return None
         return json.loads(obj.shape.geojson)
 
@@ -25,9 +26,10 @@ class StoreareaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Storearea
-        fields = ['id', 'store_name', 'type', 'logo_url', 'geometry']
+        fields = ['id', 'store_name', 'type', 'logo_url', 'is_active', 'geometry']
 
-    def get_geometry(self, obj):
+    @staticmethod
+    def get_geometry(obj):
         if not obj.shape: return None
         return json.loads(obj.shape.geojson)
 
@@ -37,9 +39,10 @@ class FacilitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Facility
-        fields = ['id', 'type', 'description', 'geometry']
+        fields = ['id', 'type', 'description', 'is_active', 'geometry']
 
-    def get_geometry(self, obj):
+    @staticmethod
+    def get_geometry(obj):
         if not obj.location: return None
         return json.loads(obj.location.geojson)
 
@@ -49,9 +52,10 @@ class EventareaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Eventarea
-        fields = ['id', 'event_name', 'type', 'geometry']
+        fields = ['id', 'description',  'type', 'is_active', 'geometry']
 
-    def get_geometry(self, obj):
+    @staticmethod
+    def get_geometry(obj):
         if not obj.shape: return None
         return json.loads(obj.shape.geojson)
 
@@ -92,7 +96,8 @@ class MapSerializer(serializers.ModelSerializer):
             'events'
         ]
 
-    def get_detail_geojson(self, obj):
+    @staticmethod
+    def get_detail_geojson(obj):
         """
         处理底图几何 (外轮廓 + 镂空)
         """

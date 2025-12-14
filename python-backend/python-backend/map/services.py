@@ -1,5 +1,5 @@
 from django.contrib.gis.geos import GEOSGeometry, Polygon
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 from map.context import MapContext, ElementContext
 
 
@@ -7,13 +7,42 @@ from map.context import MapContext, ElementContext
 # Part 1: 纯几何算法 (保持不变)
 # ==========================================
 class GeometryAlgorithms:
-    # ... (这部分代码与之前一致，省略以节省篇幅) ...
     @staticmethod
     def validate_shape_syntax(geometry: GEOSGeometry) -> Tuple[bool, str]:
         if geometry is None: return False, "Geometry is None"
         if not geometry.valid: return False, f"Invalid Geometry: {geometry.valid_reason}"
         if isinstance(geometry, Polygon) and geometry.empty: return False, "Polygon is empty"
         return True, "Valid"
+
+    @staticmethod
+    def get_distance_between_areas(shape1: GEOSGeometry, shape2: GEOSGeometry) -> float:
+        """
+        接口 3: 获取输入的两个区域之间的距离
+        """
+        if not shape1 or not shape2:
+            return -1.0
+        # distance() 计算的是两个几何体之间最近点的欧几里得距离
+        # 单位取决于 SRID (2385 为米)
+        return shape1.distance(shape2)
+
+    @staticmethod
+    def validate_holes_inside_shell(outer_shell: GEOSGeometry, holes: List[GEOSGeometry]) -> Tuple[bool, str]:
+        """
+        接口 2: 镂空本身有无超出外轮廓区域
+        """
+        if not outer_shell:
+            return False, "Outer shell is missing"
+
+        if not holes:
+            return True, "No holes to validate"
+
+        for i, hole in enumerate(holes, start=1):
+            # hole 必须完全在 outer_shell 内部 (contains)
+            # 任何一部分超出或仅仅是相交都算非法
+            if not outer_shell.contains(hole):
+                return False, f"Hole #{i} is outside or intersecting the map boundary."
+
+        return True, "All holes are valid"
 
     @staticmethod
     def check_placement(new_shape, outer_shell, holes, existing_obstacles):
@@ -41,7 +70,6 @@ class MapDisplayService:
         self.elem_ctx = ElementContext()
 
     def get_full_map_details(self, map_id):
-        # ... (保持不变) ...
         map_obj = self.map_ctx.get_map_with_building(map_id)
         if not map_obj: return None
 
@@ -58,7 +86,7 @@ class MapDisplayService:
         """
         几何校验业务流程
         """
-        # 1. 纯几何语法校验
+        # 1. 几何语法校验
         is_valid, msg = GeometryAlgorithms.validate_shape_syntax(geometry)
         if not is_valid:
             return False, msg
@@ -124,7 +152,7 @@ class MapDisplayService:
         # D. 活动区域 (Events)
         events = self.elem_ctx.get_events_by_ids(e_ids)
         for e in events:
-            if should_include(e.id, 'event') and e.shape:
+            if should_include(e.id, 'event') and e.shape and e.is_active:
                 obstacles.append(e.shape)
 
         return obstacles
