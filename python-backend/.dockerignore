@@ -1,0 +1,25 @@
+Dockerfile
+.dockerignore
+
+# 忽略整个 Git 仓库历史记录和 .gitignore 文件
+.git
+.gitignore
+
+# 忽略 Python 缓存
+__pycache__/
+*.pyc
+
+# 忽略本地数据库文件（镜像中不应包含数据）
+db.sqlite3
+*.sqlite3
+
+# 忽略本地环境变量文件
+.env*
+
+# 忽略 VS 项目文件和编译产物，这些在运行时不需要
+obj/
+*.pyproj
+*.pyproj.user
+
+# 忽略任何本地文档或说明文件
+README.md
