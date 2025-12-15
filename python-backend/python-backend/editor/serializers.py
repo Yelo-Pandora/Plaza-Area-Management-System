@@ -27,3 +27,26 @@ def get_event_serializer():
 
     return EventSerializer
 
+
+def get_eventarea_serializer():
+    """获取活动区域序列化器"""
+    Eventarea = apps.get_model('core', 'Eventarea')
+    
+    class EventareaSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Eventarea
+            fields = '__all__'
+    
+    return EventareaSerializer
+
+
+def get_otherarea_serializer():
+    """获取其他区域序列化器"""
+    Otherarea = apps.get_model('core', 'Otherarea')
+    
+    class OtherareaSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Otherarea
+            fields = '__all__'
+    
+    return OtherareaSerializer

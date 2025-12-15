@@ -4,8 +4,10 @@ from . import views
 
 # 创建路由器并注册视图集
 router = DefaultRouter()
-router.register(r'storearea', views.StoreareaViewSet, basename='storearea')
-router.register(r'event', views.EventViewSet, basename='event')
+router.register(r'storearea', views.StoreareaViewSet, basename='editor_storearea')
+router.register(r'event', views.EventViewSet, basename='editor_event')
+router.register(r'eventarea', views.EventareaViewSet, basename='editor_eventarea')
+router.register(r'otherarea', views.OtherareaViewSet, basename='editor_otherarea')
 
 urlpatterns = [
     # 包含路由器生成的所有URL
