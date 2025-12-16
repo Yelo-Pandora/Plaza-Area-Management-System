@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'rest_framework',
     'django_filters',
+    # 支持跨域请求
+    'corsheaders',
     'core.apps.CoreConfig',
     'map.apps.MapConfig',
     'client.apps.ClientConfig',
@@ -52,6 +54,9 @@ INSTALLED_APPS = [
 # Middleware framework
 # https://docs.djangoproject.com/en/2.1/topics/http/middleware/
 MIDDLEWARE = [
+    # CORS middleware should be placed as high as possible
+    'corsheaders.middleware.CorsMiddleware',
+    # 注意：确保 CommonMiddleware 仍然在 CorsMiddleware 之后
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,3 +152,13 @@ REST_FRAMEWORK = {
     # 统一日期格式 (可选)
     'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
 }
+
+# CORS 设置（开发环境方便测试，生产请按需限制）
+CORS_ALLOWED_ORIGINS = [
+  "http://localhost:8080"
+]
+CORS_ALLOW_CREDENTIALS = True
+# 可根据需要自定义允许的头、方法
+# CORS_ALLOW_HEADERS = list(default_headers) + [
+#     'your-custom-header',
+# ]

@@ -37,5 +37,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/management/auth/<str:action>/', AdminAuthView.as_view(), name='admin-auth'),
     path('api/management/profile/', AdminProfileView.as_view(), name='admin-profile'),
-
+    path('admin/', admin.site.urls),
+    path('api/search/', include('search.urls')),
+    # 其他URL配置...
 ]
