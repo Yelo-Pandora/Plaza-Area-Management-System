@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .serializers import get_eventarea_serializer, get_otherarea_serializer, get_event_serializer, get_storearea_serializer
-from .service import EventareaService, OtherareaService, EventService, StoreareaService
+from .services import EventareaService, OtherareaService, EventService, StoreareaService
 
 
 class EventareaViewSet(viewsets.ModelViewSet):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.apps import apps
-
+from core.models import Admin
 
 def get_eventarea_serializer():
     """获取活动区域序列化器"""
@@ -48,7 +48,6 @@ def get_storearea_serializer():
             exclude = ['shape']
     
     return StoreareaSerializer
-from core.models import Admin
 
 # Input Serializers (用于接收前端数据)
 class AdminRegisterSerializer(serializers.Serializer):
