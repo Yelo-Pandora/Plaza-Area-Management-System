@@ -16,10 +16,27 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+# Uncomment next two lines to enable admin:
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path,include
+from rest_framework.routers import DefaultRouter
+from map.views import MapViewSet, MapValidationView
 
+from guide.views import RoutePlanView
+
+from management.views import AdminAuthView, AdminProfileView
+
+
+router = DefaultRouter()
+router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
+    # Uncomment the next line to enable the admin:
+    #path('admin/', admin.site.urls)
+    path('api/maps/validate/', MapValidationView.as_view(), name='map-validate'),
+    path('api/guide/route/',RoutePlanView.as_view(), name='route-plan'),
+    path('api/', include(router.urls)),
+    path('api/management/auth/<str:action>/', AdminAuthView.as_view(), name='admin-auth'),
+    path('api/management/profile/', AdminProfileView.as_view(), name='admin-profile'),
     path('admin/', admin.site.urls),
     path('api/search/', include('search.urls')),
     # 其他URL配置...

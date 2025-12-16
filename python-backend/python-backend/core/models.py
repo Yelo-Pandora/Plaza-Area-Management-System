@@ -8,7 +8,7 @@ class Admin(models.Model):
 
     class Meta:
         db_table = 'admin'
-        managed = False
+        # managed = False
 
 
 class Building(models.Model):
@@ -18,7 +18,7 @@ class Building(models.Model):
 
     class Meta:
         db_table = 'building'
-        managed = False
+        # managed = False
 
 
 class Event(models.Model):
@@ -31,7 +31,7 @@ class Event(models.Model):
 
     class Meta:
         db_table = 'event'
-        managed = False
+        # managed = False
 
 
 class EventEventarea(models.Model):
@@ -41,7 +41,7 @@ class EventEventarea(models.Model):
 
     class Meta:
         db_table = 'event_eventarea'
-        managed = False
+        # managed = False
         # unique_together = (('event', 'eventarea'),)
 
 
@@ -53,7 +53,7 @@ class EventStorearea(models.Model):
     class Meta:
         db_table = 'event_storearea'
         # unique_together = (('event', 'storearea'),)
-        managed = False
+        # managed = False
 
 
 class Eventarea(models.Model):
@@ -66,7 +66,7 @@ class Eventarea(models.Model):
 
     class Meta:
         db_table = 'eventarea'
-        managed = False
+        # managed = False
 
 
 class EventareaMap(models.Model):
@@ -77,7 +77,7 @@ class EventareaMap(models.Model):
     class Meta:
         db_table = 'eventarea_map'
         # unique_together = (('eventarea', 'map'),)
-        managed = False
+        # managed = False
 
 
 class Facility(models.Model):
@@ -88,7 +88,7 @@ class Facility(models.Model):
 
     class Meta:
         db_table = 'facility'
-        managed = False
+        # managed = False
 
 
 class FacilityMap(models.Model):
@@ -99,7 +99,7 @@ class FacilityMap(models.Model):
     class Meta:
         db_table = 'facility_map'
         # unique_together = (('facility', 'map'),)
-        managed = False
+        # managed = False
 
 
 class Map(models.Model):
@@ -110,7 +110,7 @@ class Map(models.Model):
     class Meta:
         db_table = 'map'
         unique_together = (('building', 'floor_number'),)
-        managed = False
+        # managed = False
 
 
 class Otherarea(models.Model):
@@ -122,7 +122,7 @@ class Otherarea(models.Model):
 
     class Meta:
         db_table = 'otherarea'
-        managed = False
+        # managed = False
 
 
 class OtherareaMap(models.Model):
@@ -132,7 +132,7 @@ class OtherareaMap(models.Model):
 
     class Meta:
         db_table = 'otherarea_map'
-        managed = False
+        # managed = False
         # unique_together = (('otherarea', 'map'),)
 
 
@@ -151,7 +151,7 @@ class Storearea(models.Model):
 
     class Meta:
         db_table = 'storearea'
-        managed = False
+        # managed = False
 
 
 class StoreareaMap(models.Model):
@@ -162,4 +162,4 @@ class StoreareaMap(models.Model):
     class Meta:
         db_table = 'storearea_map'
         # unique_together = (('storearea', 'map'),)
-        managed = False
+        # managed = False
