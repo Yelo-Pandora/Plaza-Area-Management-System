@@ -1,0 +1,153 @@
+<script setup>
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+
+const username = ref('')
+const password = ref('')
+const error = ref('')
+
+async function handleSubmit(e) {
+  e.preventDefault()
+  error.value = ''
+
+  if (!username.value || !password.value) {
+    error.value = '请输入用户名和密码'
+    return
+  }
+
+  // 目前仅做前端假登录，后续可对接后端认证接口
+  localStorage.setItem('auth_user', username.value)
+
+  const redirect = route.query.redirect || '/'
+  router.push(redirect)
+}
+</script>
+
+<template>
+  <div class="login-page">
+    <div class="login-card">
+      <h1 class="login-title">广场区域管理系统</h1>
+      <p class="login-subtitle">管理员登录</p>
+
+      <form class="login-form" @submit="handleSubmit">
+        <div class="form-item">
+          <label for="username">用户名</label>
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            placeholder="请输入用户名"
+          >
+        </div>
+
+        <div class="form-item">
+          <label for="password">密码</label>
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            placeholder="请输入密码"
+          >
+        </div>
+
+        <p v-if="error" class="error-text">
+          {{ error }}
+        </p>
+
+        <button class="login-btn" type="submit">
+          登录
+        </button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top left, #1d4ed8, #111827);
+}
+
+.login-card {
+  width: 360px;
+  padding: 32px 28px 28px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+  color: #111827;
+}
+
+.login-subtitle {
+  margin: 8px 0 24px;
+  font-size: 13px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-item label {
+  font-size: 13px;
+  color: #374151;
+}
+
+.form-item input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+}
+
+.form-item input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.3);
+}
+
+.error-text {
+  margin: 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.login-btn {
+  margin-top: 4px;
+  height: 36px;
+  border-radius: 6px;
+  border: none;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background-color: #1d4ed8;
+}
+</style>
+
+

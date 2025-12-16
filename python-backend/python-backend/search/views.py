@@ -1,215 +1,158 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
-from django.apps import apps
+from .services import SearchService
+from .serializers import (
+    get_storearea_serializer, get_simple_storearea_serializer,
+    get_event_serializer, get_simple_event_serializer,
+    get_eventarea_serializer, get_simple_eventarea_serializer,
+    get_facility_serializer, get_simple_facility_serializer,
+    get_otherarea_serializer, get_simple_otherarea_serializer
+)
+
+search_service = SearchService()
 
 
-# 在视图函数中动态获取序列化器
-def get_serializer_class(model_name, serializer_type='default'):
-    """动态获取序列化器类"""
-    if model_name == 'Storearea' and serializer_type == 'default':
-        from .serializers import get_storearea_serializer
-        return get_storearea_serializer()
-    elif model_name == 'Storearea' and serializer_type == 'simple':
-        from .serializers import get_simple_storearea_serializer
-        return get_simple_storearea_serializer()
-    elif model_name == 'Event' and serializer_type == 'default':
-        from .serializers import get_event_serializer
-        return get_event_serializer()
-    elif model_name == 'Event' and serializer_type == 'simple':
-        from .serializers import get_simple_event_serializer
-        return get_simple_event_serializer()
-
-
-# Search店铺功能
+# ========== 店铺搜索功能 ==========
 
 @api_view(['GET'])
 def storearea_by_id(request, storearea_id):
-    """
-    按ID寻找店铺区域
-    """
-    Storearea = apps.get_model('core', 'Storearea')
-    StoreareaSerializer = get_serializer_class('Storearea', 'default')
+    """获取id为<>的商铺区域的所有信息"""
+    result, error, status_code = search_service.get_storearea_by_id(storearea_id)
+    if error:
+        return Response(error, status=status_code)
 
-    try:
-        storearea = Storearea.objects.get(id=storearea_id)
-        serializer = StoreareaSerializer(storearea)
-        return Response(serializer.data)
-    except Storearea.DoesNotExist:
-        return Response(
-            {'error': 'Storearea not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    StoreareaSerializer = get_storearea_serializer()
+    serializer = StoreareaSerializer(result)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])
 def storearea_search(request):
-    """
-    按名称寻找店铺区域
-    """
-    Storearea = apps.get_model('core', 'Storearea')
-    StoreareaSerializer = get_serializer_class('Storearea', 'default')
-
+    """按名称寻找店铺区域"""
     name = request.GET.get('name', '').strip()
-    if not name:
-        return Response(
-            {'error': 'Name parameter is required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    result, error, status_code = search_service.search_storearea_by_name(name)
+    if error:
+        return Response(error, status=status_code)
 
-    storeareas = Storearea.objects.filter(
-        store_name__icontains=name,
-        is_active=True
-    )
-    serializer = StoreareaSerializer(storeareas, many=True)
+    StoreareaSerializer = get_storearea_serializer()
+    serializer = StoreareaSerializer(result, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def storearea_list_by_type(request):
-    """
-    返回指定类型店铺区域列表
-    """
-    Storearea = apps.get_model('core', 'Storearea')
-    SimpleStoreareaSerializer = get_serializer_class('Storearea', 'simple')
-
+    """返回指定类型店铺区域列表"""
     type_param = request.GET.get('type', '').strip()
+    result, extra, error = search_service.list_storearea_by_type(type_param)
+    if error:
+        return Response(error, status=extra)
 
     if type_param:
-        try:
-            type_id = int(type_param)
-            storeareas = Storearea.objects.filter(type=type_id, is_active=True)
-            StoreareaSerializer = get_serializer_class('Storearea', 'default')
-            serializer = StoreareaSerializer(storeareas, many=True)
-            return Response({
-                'type': type_id,
-                'storeareas': serializer.data
-            })
-        except ValueError:
-            return Response(
-                {'error': 'Invalid type parameter'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        StoreareaSerializer = get_storearea_serializer()
+        serializer = StoreareaSerializer(result, many=True)
+        response_data = {'type': extra['type'], 'storeareas': serializer.data}
     else:
-        storeareas = Storearea.objects.filter(is_active=True)
         categorized = {}
-        for storearea in storeareas:
+        SimpleStoreareaSerializer = get_simple_storearea_serializer()
+        for storearea in result:
             type_key = storearea.type or 0
             if type_key not in categorized:
                 categorized[type_key] = []
             serializer = SimpleStoreareaSerializer(storearea)
             categorized[type_key].append(serializer.data)
+        response_data = categorized
 
-        return Response(categorized)
+    return Response(response_data)
 
 
 @api_view(['GET'])
 def storearea_events(request, storearea_id):
-    """
-    返回指定店铺区域的所有活动ID列表
-    """
-    Storearea = apps.get_model('core', 'Storearea')
-    EventStorearea = apps.get_model('core', 'EventStorearea')
-
-    try:
-        Storearea.objects.get(id=storearea_id, is_active=True)
-
-        event_relations = EventStorearea.objects.filter(storearea_id=storearea_id)
-        event_ids = [relation.event_id for relation in event_relations]
-
-        return Response({
-            'storearea_id': storearea_id,
-            'event_ids': event_ids
-        })
-    except Storearea.DoesNotExist:
-        return Response(
-            {'error': 'Storearea not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    """返回指定店铺区域的所有活动ID列表"""
+    result, error, status_code = search_service.get_storearea_events(storearea_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
 
 
-# Search活动功能
+@api_view(['GET'])
+def storearea_map_ids(request, storearea_id):
+    """获取storearea_id为<>的活动区域所属的map_id"""
+    result, error, status_code = search_service.get_storearea_map_ids(storearea_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def storearea_ids_by_map_and_type(request):
+    """获取map_id为<> 且type为<>的所有storearea的id"""
+    map_id = request.GET.get('map_id', '').strip()
+    type_param = request.GET.get('type', '').strip()
+
+    result, error, status_code = search_service.get_storearea_ids_by_map_and_type(map_id, type_param)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def all_storearea_ids_by_map(request):
+    """获取map_id为<>的地图对应的所有storearea_id"""
+    map_id = request.GET.get('map_id', '').strip()
+
+    result, error, status_code = search_service.get_all_storearea_ids_by_map(map_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+# ========== 活动搜索功能 ==========
 
 @api_view(['GET'])
 def event_by_id(request, event_id):
-    """
-    按ID寻找活动
-    """
-    Event = apps.get_model('core', 'Event')
-    EventSerializer = get_serializer_class('Event', 'default')
+    """按ID寻找活动"""
+    result, error, status_code = search_service.get_event_by_id(event_id)
+    if error:
+        return Response(error, status=status_code)
 
-    try:
-        event = Event.objects.get(id=event_id)
-        serializer = EventSerializer(event)
-        return Response(serializer.data)
-    except Event.DoesNotExist:
-        return Response(
-            {'error': 'Event not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    EventSerializer = get_event_serializer()
+    serializer = EventSerializer(result)
+    return Response(serializer.data)
 
 
 @api_view(['GET'])
 def event_search(request):
-    """
-    按名称寻找活动
-    """
-    Event = apps.get_model('core', 'Event')
-    EventSerializer = get_serializer_class('Event', 'default')
-
+    """按名称寻找活动"""
     name = request.GET.get('name', '').strip()
-    if not name:
-        return Response(
-            {'error': 'Name parameter is required'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    result, error, status_code = search_service.search_event_by_name(name)
+    if error:
+        return Response(error, status=status_code)
 
-    events = Event.objects.filter(
-        event_name__icontains=name,
-        is_active=True
-    )
-    serializer = EventSerializer(events, many=True)
+    EventSerializer = get_event_serializer()
+    serializer = EventSerializer(result, many=True)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
 def event_list_by_type(request):
-    """
-    返回指定类型活动列表
-    """
-    Event = apps.get_model('core', 'Event')
-    EventEventarea = apps.get_model('core', 'EventEventarea')
-    SimpleEventSerializer = get_serializer_class('Event', 'simple')
-
+    """返回指定类型活动列表"""
     type_param = request.GET.get('type', '').strip()
+    result, extra, error = search_service.list_event_by_type(type_param)
+    if error:
+        return Response(error, status=extra)
 
     if type_param:
-        try:
-            type_id = int(type_param)
-            event_ids = EventEventarea.objects.filter(
-                eventarea__type=type_id
-            ).values_list('event_id', flat=True).distinct()
-
-            events = Event.objects.filter(
-                id__in=event_ids,
-                is_active=True
-            )
-            EventSerializer = get_serializer_class('Event', 'default')
-            serializer = EventSerializer(events, many=True)
-            return Response({
-                'type': type_id,
-                'events': serializer.data
-            })
-        except ValueError:
-            return Response(
-                {'error': 'Invalid type parameter'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        EventSerializer = get_event_serializer()
+        serializer = EventSerializer(result, many=True)
+        response_data = {'type': extra['type'], 'events': serializer.data}
     else:
-        events = Event.objects.filter(is_active=True)
         categorized = {}
+        SimpleEventSerializer = get_simple_event_serializer()
 
-        for event in events:
+        for event in result:
+            # 获取该活动关联的所有Eventarea类型
+            from django.apps import apps
+            EventEventarea = apps.get_model('core', 'EventEventarea')
             eventarea_types = EventEventarea.objects.filter(
                 event_id=event.id
             ).values_list('eventarea__type', flat=True).distinct()
@@ -229,35 +172,153 @@ def event_list_by_type(request):
                     serializer = SimpleEventSerializer(event)
                     categorized[type_key].append(serializer.data)
 
-        return Response(categorized)
+        response_data = categorized
+
+    return Response(response_data)
 
 
 @api_view(['GET'])
 def event_areas(request, event_id):
-    """
-    返回参加该活动的区域ID列表
-    """
-    Event = apps.get_model('core', 'Event')
-    EventStorearea = apps.get_model('core', 'EventStorearea')
-    EventEventarea = apps.get_model('core', 'EventEventarea')
+    """返回参加该活动的区域ID列表"""
+    result, error, status_code = search_service.get_event_areas(event_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
 
-    try:
-        Event.objects.get(id=event_id)
 
-        storearea_relations = EventStorearea.objects.filter(event_id=event_id)
-        storearea_ids = [relation.storearea_id for relation in storearea_relations]
+# ========== 活动区域功能 ==========
 
-        eventarea_relations = EventEventarea.objects.filter(event_id=event_id)
-        eventarea_ids = [relation.eventarea_id for relation in eventarea_relations]
+@api_view(['GET'])
+def eventarea_by_id(request, eventarea_id):
+    """获取id为<>的活动区域的所有信息"""
+    result, error, status_code = search_service.get_eventarea_by_id(eventarea_id)
+    if error:
+        return Response(error, status=status_code)
 
-        return Response({
-            'event_id': event_id,
-            'storearea_ids': storearea_ids,
-            'eventarea_ids': eventarea_ids,
-            'all_area_ids': storearea_ids + eventarea_ids
-        })
-    except Event.DoesNotExist:
-        return Response(
-            {'error': 'Event not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    EventareaSerializer = get_eventarea_serializer()
+    serializer = EventareaSerializer(result)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def eventarea_ids_by_map_and_type(request):
+    """获取map_id为<> 且 type为<>的所有eventarea的id"""
+    map_id = request.GET.get('map_id', '').strip()
+    type_param = request.GET.get('type', '').strip()
+
+    result, error, status_code = search_service.get_eventarea_ids_by_map_and_type(map_id, type_param)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def eventarea_map_ids(request, eventarea_id):
+    """获取eventarea_id为<>的活动区域所属的map_id"""
+    result, error, status_code = search_service.get_eventarea_map_ids(eventarea_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def all_eventarea_ids_by_map(request):
+    """获取map_id为<>的地图对应的所有eventarea_id"""
+    map_id = request.GET.get('map_id', '').strip()
+
+    result, error, status_code = search_service.get_all_eventarea_ids_by_map(map_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+# ========== 设施功能 ==========
+
+@api_view(['GET'])
+def facility_by_id(request, facility_id):
+    """获取id为<>的设施的所有信息"""
+    result, error, status_code = search_service.get_facility_by_id(facility_id)
+    if error:
+        return Response(error, status=status_code)
+
+    FacilitySerializer = get_facility_serializer()
+    serializer = FacilitySerializer(result)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def facility_ids_by_map_and_type(request):
+    """获取map_id为<> 且type为<>的所有设施id"""
+    map_id = request.GET.get('map_id', '').strip()
+    type_param = request.GET.get('type', '').strip()
+
+    result, error, status_code = search_service.get_facility_ids_by_map_and_type(map_id, type_param)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def facility_map_ids(request, facility_id):
+    """获取facility_id为<>的活动区域所属的map_id"""
+    result, error, status_code = search_service.get_facility_map_ids(facility_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def all_facility_ids_by_map(request):
+    """获取map_id为<>的地图对应的所有facility_id"""
+    map_id = request.GET.get('map_id', '').strip()
+
+    result, error, status_code = search_service.get_all_facility_ids_by_map(map_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+# ========== 其他区域功能 ==========
+
+@api_view(['GET'])
+def otherarea_by_id(request, otherarea_id):
+    """获取id为<>的其他区域的所有信息"""
+    result, error, status_code = search_service.get_otherarea_by_id(otherarea_id)
+    if error:
+        return Response(error, status=status_code)
+
+    OtherareaSerializer = get_otherarea_serializer()
+    serializer = OtherareaSerializer(result)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def otherarea_ids_by_map_and_type(request):
+    """获取map_id为<> 且type为<>的所有otherarea的id"""
+    map_id = request.GET.get('map_id', '').strip()
+    type_param = request.GET.get('type', '').strip()
+
+    result, error, status_code = search_service.get_otherarea_ids_by_map_and_type(map_id, type_param)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def otherarea_map_ids(request, otherarea_id):
+    """获取otherarea_id为<>的活动区域所属的map_id"""
+    result, error, status_code = search_service.get_otherarea_map_ids(otherarea_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
+
+
+@api_view(['GET'])
+def all_otherarea_ids_by_map(request):
+    """获取map_id为<>的地图对应的所有otherarea_id"""
+    map_id = request.GET.get('map_id', '').strip()
+
+    result, error, status_code = search_service.get_all_otherarea_ids_by_map(map_id)
+    if error:
+        return Response(error, status=status_code)
+    return Response(result)
