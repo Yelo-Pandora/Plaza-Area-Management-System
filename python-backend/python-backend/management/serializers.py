@@ -49,6 +49,18 @@ def get_storearea_serializer():
     
     return StoreareaSerializer
 
+
+def get_facility_serializer():
+    """获取Facility模型的序列化器"""
+    Facility = apps.get_model('core', 'Facility')
+    
+    class FacilitySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Facility
+            exclude = ['location']
+    
+    return FacilitySerializer
+
 # Input Serializers (用于接收前端数据)
 class AdminRegisterSerializer(serializers.Serializer):
     """管理员注册输入"""

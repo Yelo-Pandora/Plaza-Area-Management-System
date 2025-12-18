@@ -111,7 +111,7 @@ class MapDisplayService:
             existing_obstacles=obstacles
         )
 
-    def _collect_obstacles(self, map_obj, exclude_id, exclude_type) -> List[GEOSGeometry]:
+    def _collect_obstacles(self, map_obj, exclude_id, area_type) -> List[GEOSGeometry]:
         """
         私有辅助方法：利用 MapContext 和 ElementContext 收集该地图上所有实体的形状
         """
@@ -123,7 +123,7 @@ class MapDisplayService:
         # 辅助函数：处理排除逻辑
         def should_include(item_id, item_type):
             # 如果类型相同且 ID 相同，则排除（说明是正在编辑的那个对象）
-            if exclude_type == item_type and str(item_id) == str(exclude_id):
+            if area_type == item_type and str(item_id) == str(exclude_id):
                 return False
             return True
 

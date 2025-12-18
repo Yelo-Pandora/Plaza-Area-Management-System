@@ -1,8 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .serializers import get_eventarea_serializer, get_otherarea_serializer, get_event_serializer, get_storearea_serializer
-from .services import EventareaService, OtherareaService, EventService, StoreareaService
+from .serializers import get_eventarea_serializer, get_otherarea_serializer, get_event_serializer, get_storearea_serializer, get_facility_serializer
+from .services import EventareaService, OtherareaService, EventService, StoreareaService, FacilityService
 
 
 class EventareaViewSet(viewsets.ModelViewSet):
@@ -373,9 +373,112 @@ class StoreareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def destroy(self, request, pk=None):
-        """删除指定店铺区域"""
+        """
+        删除指定店铺区域
+        """
         try:
             StoreareaService.delete_storearea(pk)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FacilityViewSet(viewsets.ModelViewSet):
+    """
+    设施（Facility）的视图集
+    
+    注意：
+    - 在management模块中处理除location属性外的所有其他属性
+    - location属性的操作由editor模块处理
+    - 不允许修改location属性
+    
+    支持的操作：
+    - GET /api/management/facility/ - 获取所有设施列表
+    - GET /api/management/facility/{id}/ - 获取指定设施详情
+    - POST /api/management/facility/ - 创建新的设施
+    - PUT /api/management/facility/{id}/ - 完整更新设施（不包括location）
+    - PATCH /api/management/facility/{id}/ - 部分更新设施（不包括location）
+    - DELETE /api/management/facility/{id}/ - 删除指定设施
+    """
+    
+    def get_serializer_class(self):
+        """获取序列化器类"""
+        return get_facility_serializer()
+    
+    def get_queryset(self):
+        """获取所有设施"""
+        return FacilityService.get_all_facilities()
+    
+    def list(self, request, *args, **kwargs):
+        """获取所有设施列表"""
+        facilities = FacilityService.get_all_facilities()
+        serializer = self.get_serializer(facilities, many=True)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, pk=None):
+        """获取指定设施详情"""
+        facility = get_object_or_404(FacilityService.get_all_facilities(), pk=pk)
+        serializer = self.get_serializer(facility)
+        return Response(serializer.data)
+    
+    def create(self, request, *args, **kwargs):
+        """创建新的设施"""
+        try:
+            # 检查是否包含location属性，如果包含则移除
+            data = request.data.copy()
+            if 'location' in data:
+                data.pop('location')
+            
+            facility = FacilityService.create_facility(data)
+            serializer = self.get_serializer(facility)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def update(self, request, pk=None):
+        """完整更新设施（不包括location）"""
+        try:
+            # 检查是否包含location属性，如果包含则返回错误
+            if 'location' in request.data:
+                return Response(
+                    {'error': 'Location attribute cannot be updated in management module'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            facility = FacilityService.update_facility(pk, request.data)
+            serializer = self.get_serializer(facility)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def partial_update(self, request, pk=None):
+        """部分更新设施（不包括location）"""
+        try:
+            # 检查是否包含location属性，如果包含则返回错误
+            if 'location' in request.data:
+                return Response(
+                    {'error': 'Location attribute cannot be updated in management module'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            facility = FacilityService.update_facility(pk, request.data)
+            serializer = self.get_serializer(facility)
+            return Response(serializer.data)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def destroy(self, request, pk=None):
+        """删除指定设施"""
+        try:
+            FacilityService.delete_facility(pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

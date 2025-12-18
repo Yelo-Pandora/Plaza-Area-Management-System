@@ -63,15 +63,16 @@ class StoreareaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
-        """创建店铺区域（仅支持shape属性）"""
+        """创建店铺区域（仅支持shape属性），并绑定到指定地图"""
         if 'shape' not in request.data:
             return Response(
                 {'error': 'Only shape attribute can be provided when creating storearea in editor module'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         shape = request.data.get('shape')
-        new_storearea = StoreareaService.create_storearea(shape)
+        map_id = request.data.get('map_id')
+        new_storearea = StoreareaService.create_storearea(shape, map_id)
         serializer = self.get_serializer(new_storearea)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
@@ -267,15 +268,16 @@ class EventareaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
-        """创建活动区域（仅支持shape属性）"""
+        """创建活动区域（仅支持shape属性），并绑定到指定地图"""
         if 'shape' not in request.data:
             return Response(
                 {'error': 'Only shape attribute can be provided when creating eventarea in editor module'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         shape = request.data.get('shape')
-        new_eventarea = EventareaService.create_eventarea(shape)
+        map_id = request.data.get('map_id')
+        new_eventarea = EventareaService.create_eventarea(shape, map_id)
         serializer = self.get_serializer(new_eventarea)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
@@ -342,15 +344,17 @@ class OtherareaViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     def create(self, request, *args, **kwargs):
-        """创建其他区域（仅支持shape属性）"""
+        """创建其他区域（仅支持shape属性），并绑定到指定地图"""
         if 'shape' not in request.data:
             return Response(
                 {'error': 'Only shape attribute can be provided when creating otherarea in editor module'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         shape = request.data.get('shape')
-        new_otherarea = OtherareaService.create_otherarea(shape)
+        map_id = request.data.get('map_id')
+        type_val = request.data.get('type')
+        new_otherarea = OtherareaService.create_otherarea(shape, map_id, type_val)
         serializer = self.get_serializer(new_otherarea)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     

@@ -1,5 +1,4 @@
-from .context import AdminContext
-from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext
+from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext, FacilityContext
 from core.models import Admin
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ValidationError
@@ -415,8 +414,103 @@ class StoreareaService:
     def delete_storearea(storearea_id):
         """
         删除店铺区域
-
+        
         Args:
             storearea_id: 店铺区域ID
         """
         StoreareaContext.delete_storearea(storearea_id)
+
+
+class FacilityService:
+    """
+    设施（Facility）的业务逻辑层
+    
+    提供与Facility模型相关的业务逻辑处理方法
+    注意：location属性由editor模块处理
+    """
+
+    @staticmethod
+    def get_all_facilities():
+        """
+        获取所有设施
+        
+        Returns:
+            QuerySet: 设施的查询集
+        """
+        return FacilityContext.get_all_facilities()
+
+    @staticmethod
+    def get_facility_by_id(facility_id):
+        """
+        根据ID获取设施
+        
+        Args:
+            facility_id: 设施ID
+        
+        Returns:
+            Facility: 设施对象
+        """
+        return FacilityContext.get_facility_by_id(facility_id)
+
+    @staticmethod
+    def create_facility(data):
+        """
+        创建新的设施
+        
+        Args:
+            data: 设施数据
+        
+        Returns:
+            Facility: 创建的设施对象
+        """
+        # 业务逻辑验证
+        # 1. 验证数据完整性
+        required_fields = ['is_active', 'description', 'type']
+        for field in required_fields:
+            if field not in data:
+                raise ValueError(f"Field '{field}' is required")
+
+        # 2. 验证类型是否合法（根据实际需求调整）
+        # 这里假设type是整数类型，表示不同的设施类型
+
+        # 3. 如果提供了location属性，将其移除（location属性由editor模块处理）
+        if 'location' in data:
+            data.pop('location')
+
+        return FacilityContext.create_facility(data)
+
+    @staticmethod
+    def update_facility(facility_id, data):
+        """
+        更新设施
+        
+        Args:
+            facility_id: 设施ID
+            data: 更新数据
+        
+        Returns:
+            Facility: 更新后的设施对象
+        """
+        # 如果提供了location属性，将其移除（location属性由editor模块处理）
+        if 'location' in data:
+            data.pop('location')
+
+        # 如果有其他业务逻辑验证，可以在这里添加
+
+        return FacilityContext.update_facility(facility_id, data)
+
+    @staticmethod
+    def delete_facility(facility_id):
+        """
+        删除设施
+        
+        Args:
+            facility_id: 设施ID
+        """
+        # 业务逻辑验证
+        # 1. 验证设施是否存在
+        facility = FacilityContext.get_facility_by_id(facility_id)
+
+        # 2. 可以添加其他验证逻辑
+
+        return FacilityContext.delete_facility(facility_id)

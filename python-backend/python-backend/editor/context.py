@@ -1,5 +1,15 @@
 from django.contrib.gis.geos import GEOSGeometry
-from core.models import Event, Storearea, EventStorearea, EventEventarea, Eventarea, Otherarea
+from core.models import (
+    Event,
+    Storearea,
+    StoreareaMap,
+    EventStorearea,
+    EventEventarea,
+    Eventarea,
+    EventareaMap,
+    Otherarea,
+    OtherareaMap,
+)
 
 
 class StoreareaContext:
@@ -19,22 +29,24 @@ class StoreareaContext:
         return Storearea.objects.filter(id=storearea_id).first()
 
     @staticmethod
-    def create(shape):
-        """创建新的店铺区域"""
+    def create(shape, map_id=None):
+        """创建新的店铺区域，并可选绑定到指定地图"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            # 这样无论是WKT还是GeoJSON格式，都会使用正确的SRID
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
+        
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
         
         storearea = Storearea.objects.create(shape=shape_geom)
+        # 绑定到地图
+        if map_id is not None:
+            StoreareaMap.objects.create(storearea=storearea, map_id=map_id)
         return storearea
 
     @staticmethod
@@ -42,16 +54,14 @@ class StoreareaContext:
         """更新店铺区域的形状"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
+        
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
         
         Storearea.objects.filter(id=storearea_id).update(shape=shape_geom)
         return StoreareaContext.get_by_id(storearea_id)
@@ -136,22 +146,22 @@ class EventareaContext:
         return Eventarea.objects.filter(id=eventarea_id).first()
 
     @staticmethod
-    def create(shape):
-        """创建新的活动区域"""
+    def create(shape, map_id=None):
+        """创建新的活动区域，并可选绑定到指定地图"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
+        
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
         
         eventarea = Eventarea.objects.create(shape=shape_geom)
+        if map_id is not None:
+            EventareaMap.objects.create(eventarea=eventarea, map_id=map_id)
         return eventarea
 
     @staticmethod
@@ -159,16 +169,14 @@ class EventareaContext:
         """更新活动区域的形状"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
+        
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
         
         Eventarea.objects.filter(id=eventarea_id).update(shape=shape_geom)
         return EventareaContext.get_by_id(eventarea_id)
@@ -196,22 +204,25 @@ class OtherareaContext:
         return Otherarea.objects.filter(id=otherarea_id).first()
 
     @staticmethod
-    def create(shape):
-        """创建新的其他区域"""
+    def create(shape, map_id=None, type_val=None):
+        """创建新的其他区域，并可选绑定到指定地图"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
         
-        otherarea = Otherarea.objects.create(shape=shape_geom)
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
+        
+        otherarea = Otherarea.objects.create(
+            shape=shape_geom,
+            type=type_val if type_val is not None else 0  # 默认 0，避免 NOT NULL 约束报错
+        )
+        if map_id is not None:
+            OtherareaMap.objects.create(otherarea=otherarea, map_id=map_id)
         return otherarea
 
     @staticmethod
@@ -219,16 +230,14 @@ class OtherareaContext:
         """更新其他区域的形状"""
         # 将shape字符串转换为GEOSGeometry对象，支持WKT和GeoJSON格式
         try:
-            # 尝试直接解析（支持WKT格式）
-            shape_geom = GEOSGeometry(shape)
+            # 直接解析，并明确指定SRID=2385
+            shape_geom = GEOSGeometry(shape, srid=2385)
         except Exception as e:
-            try:
-                # 尝试解析GeoJSON格式
-                import json
-                geojson_data = json.loads(shape)
-                shape_geom = GEOSGeometry(json.dumps(geojson_data))
-            except Exception as e2:
-                raise ValueError(f"Invalid spatial data. Both WKT and GeoJSON parsing failed: {str(e)}")
+            raise ValueError(f"Invalid spatial data. Failed to parse geometry: {str(e)}")
+        
+        # 确保SRID为2385（双重保险）
+        if shape_geom.srid != 2385:
+            shape_geom.srid = 2385
         
         Otherarea.objects.filter(id=otherarea_id).update(shape=shape_geom)
         return OtherareaContext.get_by_id(otherarea_id)

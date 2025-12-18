@@ -18,10 +18,9 @@ class StoreareaService:
         return StoreareaContext.get_by_id(storearea_id)
 
     @staticmethod
-    def create_storearea(shape):
-        """创建新的店铺区域"""
-        # 可以在这里添加业务逻辑验证
-        return StoreareaContext.create(shape)
+    def create_storearea(shape, map_id=None):
+        """创建新的店铺区域，并可选绑定到指定地图"""
+        return StoreareaContext.create(shape, map_id)
 
     @staticmethod
     def update_shape(storearea_id, shape):
@@ -113,10 +112,9 @@ class EventareaService:
         return EventareaContext.get_by_id(eventarea_id)
 
     @staticmethod
-    def create_eventarea(shape):
-        """创建新的活动区域"""
-        # 可以在这里添加业务逻辑验证（如形状有效性检查等）
-        return EventareaContext.create(shape)
+    def create_eventarea(shape, map_id=None):
+        """创建新的活动区域，并可选绑定到指定地图"""
+        return EventareaContext.create(shape, map_id)
 
     @staticmethod
     def update_eventarea_shape(eventarea_id, shape):
@@ -149,10 +147,9 @@ class OtherareaService:
         return OtherareaContext.get_by_id(otherarea_id)
 
     @staticmethod
-    def create_otherarea(shape):
-        """创建新的其他区域"""
-        # 可以在这里添加业务逻辑验证（如形状有效性检查等）
-        return OtherareaContext.create(shape)
+    def create_otherarea(shape, map_id=None, type_val=None):
+        """创建新的其他区域，并可选绑定到指定地图"""
+        return OtherareaContext.create(shape, map_id, type_val)
 
     @staticmethod
     def update_otherarea_shape(otherarea_id, shape):

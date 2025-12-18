@@ -1,4 +1,4 @@
-from core.models import Eventarea, Otherarea, Event, Storearea
+from core.models import Eventarea, Otherarea, Event, Storearea, Facility
 
 
 class EventareaContext:
@@ -289,3 +289,76 @@ class OtherareaContext:
             otherarea_id: 其他区域ID
         """
         Otherarea.objects.filter(id=otherarea_id).delete()
+
+
+class FacilityContext:
+    """
+    设施（Facility）的数据访问层
+    
+    提供与Facility模型相关的数据操作方法
+    注意：location属性由editor模块处理
+    """
+    
+    @staticmethod
+    def get_all_facilities():
+        """
+        获取所有设施
+        
+        Returns:
+            QuerySet: 设施的查询集
+        """
+        return Facility.objects.all()
+    
+    @staticmethod
+    def get_facility_by_id(facility_id):
+        """
+        根据ID获取设施
+        
+        Args:
+            facility_id: 设施ID
+        
+        Returns:
+            Facility: 设施对象
+        """
+        return Facility.objects.get(id=facility_id)
+    
+    @staticmethod
+    def create_facility(data):
+        """
+        创建新的设施
+        
+        Args:
+            data: 设施数据
+        
+        Returns:
+            Facility: 创建的设施对象
+        """
+        return Facility.objects.create(**data)
+    
+    @staticmethod
+    def update_facility(facility_id, data):
+        """
+        更新设施
+        
+        Args:
+            facility_id: 设施ID
+            data: 更新数据
+        
+        Returns:
+            Facility: 更新后的设施对象
+        """
+        facility = Facility.objects.get(id=facility_id)
+        for key, value in data.items():
+            setattr(facility, key, value)
+        facility.save()
+        return facility
+    
+    @staticmethod
+    def delete_facility(facility_id):
+        """
+        删除设施
+        
+        Args:
+            facility_id: 设施ID
+        """
+        Facility.objects.filter(id=facility_id).delete()
