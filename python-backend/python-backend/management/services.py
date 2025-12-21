@@ -1,7 +1,9 @@
 from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext, FacilityContext
+from .interfaces import IValidationService, IDataProcessing
 from core.models import Admin
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ValidationError
+from typing import Any, Dict, List, Optional
 
 
 class AdminService:
@@ -514,3 +516,52 @@ class FacilityService:
         # 2. 可以添加其他验证逻辑
 
         return FacilityContext.delete_facility(facility_id)
+
+
+class DataValidationService(IValidationService, IDataProcessing):
+    """
+    数据验证服务，实现IValidationService和IDataProcessing接口
+    空实现，仅满足接口要求
+    """
+    
+    def validate_data(self, data: Dict[str, Any], area_type: str) -> bool:
+        """
+        验证数据的完整性和合法性
+        空实现，总是返回True
+        """
+        return True
+    
+    def validate_required_fields(self, data: Dict[str, Any], required_fields: List[str]) -> bool:
+        """
+        验证必填字段是否存在
+        空实现，总是返回True
+        """
+        return True
+    
+    def validate_field_format(self, data: Dict[str, Any], field_name: str, field_type: type) -> bool:
+        """
+        验证字段格式是否正确
+        空实现，总是返回True
+        """
+        return True
+    
+    def process_data(self, data: Dict[str, Any], area_type: str) -> Dict[str, Any]:
+        """
+        处理数据（转换、清洗等）
+        空实现，直接返回原始数据
+        """
+        return data
+    
+    def clean_data(self, data: Dict[str, Any], area_type: str) -> Dict[str, Any]:
+        """
+        清洗数据（移除无效字段、转换格式等）
+        空实现，直接返回原始数据
+        """
+        return data
+    
+    def transform_data(self, data: Dict[str, Any], area_type: str) -> Dict[str, Any]:
+        """
+        转换数据格式
+        空实现，直接返回原始数据
+        """
+        return data

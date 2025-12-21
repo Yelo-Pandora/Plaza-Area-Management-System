@@ -1,9 +1,10 @@
 from core.context import BaseContext
 from .context import EditorContext
+from .interfaces import IShapeEditor, IShapeValidator
 from django.db import transaction
 
 
-class EditorService:
+class EditorService(IShapeEditor, IShapeValidator):
     """负责处理创建、更新及关联逻辑"""
 
     def create_element(self, area_type, data, map_id=None):
@@ -37,3 +38,19 @@ class EditorService:
         if not instance:
             return None
         return ctx.update(instance, **data)
+    
+    def delete_element(self, area_type, instance_id):
+        ModelClass, _, _ = EditorContext.get_relation_model(area_type)
+        ctx = BaseContext(ModelClass)
+        instance = ctx.get_by_id(instance_id)
+        if not instance:
+            return None
+        return ctx.delete(instance)
+    
+    def validate_shape(self, shape):
+        # 简单实现，实际项目中需要更复杂的验证逻辑
+        return True
+    
+    def validate_placement(self, shape, map_id):
+        # 简单实现，实际项目中需要更复杂的验证逻辑
+        return True
