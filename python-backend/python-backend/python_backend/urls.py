@@ -30,7 +30,6 @@ from management.views import AdminAuthView, AdminProfileView
 router = DefaultRouter()
 router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('search/', include('search.urls')),
     path('api/editor/', include('editor.urls')),
     path('api/management/', include('management.urls')),

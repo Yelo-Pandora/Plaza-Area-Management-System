@@ -1,0 +1,1312 @@
+
+================================================================================
+文件路径: components\CreateModel\CreateModel.css
+--------------------------------------------------------------------------------
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1e293b;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.modal-close:hover {
+  background-color: #f3f4f6;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.shape-templates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.shape-template {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shape-template:hover {
+  border-color: #93c5fd;
+  background-color: #eff6ff;
+}
+
+.shape-template.selected {
+  border-color: #3b82f6;
+  background-color: #dbeafe;
+}
+
+.template-icon {
+  font-size: 2rem;
+}
+
+.template-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.size-control {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.size-slider {
+  flex: 1;
+}
+
+.size-value {
+  font-size: 0.875rem;
+  color: #6b7280;
+  min-width: 30px;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background-color: #6b7280;
+  color: #ffffff;
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+
+
+================================================================================
+文件路径: components\CreateModel\CreateModel.js
+--------------------------------------------------------------------------------
+
+import { reactive, ref } from 'vue'
+import { useMapEditorStore } from '../../composables/useMapEditorStore'
+
+export function useCreateModalLogic(props, emit) {
+  const { currentMapId, addLocalFeature } = useMapEditorStore()
+
+  const submitting = ref(false)
+  const errorMessage = ref('')
+
+  const form = reactive({
+    type: 'storearea',
+    shape: 'square',
+    size: 20
+  })
+
+  const shapeTemplates = [
+    { label: '正方形', shape: 'square', icon: '◼️' },
+    { label: '矩形', shape: 'rect', icon: '▭️' },
+    { label: '圆形', shape: 'circle', icon: '⭕' },
+    { label: '三角形', shape: 'triangle', icon: '🔺' },
+    { label: '六边形', shape: 'hexagon', icon: '⬢' }
+  ]
+
+  const close = () => {
+    emit('update:visible', false)
+    errorMessage.value = ''
+  }
+
+  // 生成几何数据
+  const generateGeometry = (shape, size) => {
+    // 默认生成在画布中心，这里简化为固定坐标 (200, 200)
+    // 实际项目中可从 store 获取 stage 宽高
+    const centerX = 200
+    const centerY = 200
+    const coords = []
+
+    switch (shape) {
+      case 'square':
+        coords.push([centerX - size, centerY - size])
+        coords.push([centerX + size, centerY - size])
+        coords.push([centerX + size, centerY + size])
+        coords.push([centerX - size, centerY + size])
+        break
+      case 'rect':
+        coords.push([centerX - size * 1.5, centerY - size])
+        coords.push([centerX + size * 1.5, centerY - size])
+        coords.push([centerX + size * 1.5, centerY + size])
+        coords.push([centerX - size * 1.5, centerY + size])
+        break
+      case 'circle': // 近似多边形
+        const sides = 12
+        for (let i = 0; i < sides; i++) {
+          const angle = (i / sides) * Math.PI * 2
+          coords.push([
+            centerX + Math.cos(angle) * size,
+            centerY + Math.sin(angle) * size
+          ])
+        }
+        break
+      case 'triangle':
+        coords.push([centerX, centerY - size])
+        coords.push([centerX + size, centerY + size])
+        coords.push([centerX - size, centerY + size])
+        break
+      case 'hexagon':
+        for (let i = 0; i < 6; i++) {
+          const angle = (i / 6) * Math.PI * 2
+          coords.push([
+            centerX + Math.cos(angle) * size,
+            centerY + Math.sin(angle) * size
+          ])
+        }
+        break
+    }
+
+    // 闭合
+    if (coords.length > 0) {
+      coords.push([...coords[0]])
+    }
+
+    return {
+      type: 'Polygon',
+      coordinates: [coords]
+    }
+  }
+
+  const handleCreate = async () => {
+    if (!currentMapId.value) {
+      errorMessage.value = '请先选择地图'
+      return
+    }
+
+    submitting.value = true
+    try {
+      const geometry = generateGeometry(form.shape, form.size)
+
+      const createData = {
+        map_id: currentMapId.value,
+        geometry: geometry,
+        description: '',
+        is_active: true
+      }
+
+      // 设置默认名称
+      if (form.type === 'storearea') {
+        createData.store_name = '新店铺'
+        createData.store_type = 0
+      } else if (form.type === 'eventarea') {
+        createData.event_name = '新活动区域'
+        createData.event_type = 0
+      } else if (form.type === 'otherarea') {
+        createData.name = '新区域'
+        createData.type_id = 0
+      }
+
+      // 模拟创建成功 (实际应调用 API)
+      const newArea = {
+        id: Date.now(),
+        ...createData
+      }
+
+      addLocalFeature(form.type, newArea)
+      close()
+
+    } catch (error) {
+      errorMessage.value = error.message
+    } finally {
+      submitting.value = false
+    }
+  }
+
+  return { form, shapeTemplates, handleCreate, close, submitting, errorMessage }
+}
+
+
+
+================================================================================
+文件路径: components\EditorHeader\EditorHeader.css
+--------------------------------------------------------------------------------
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1e293b;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.map-selector {
+  display: flex;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: #ffffff;
+}
+
+
+
+================================================================================
+文件路径: components\EditorHeader\EditorHeader.js
+--------------------------------------------------------------------------------
+
+import { useMapEditorStore } from '../../composables/useMapEditorStore'
+
+export function useHeaderLogic() {
+  const { maps, currentMapId, loadCurrentMap } = useMapEditorStore()
+
+  const handleChange = async () => {
+    if (!currentMapId.value) return
+    await loadCurrentMap()
+  }
+
+  return {
+    maps,
+    currentMapId,
+    handleChange
+  }
+}
+
+
+
+================================================================================
+文件路径: components\MapCanvas\MapCanvas.css
+--------------------------------------------------------------------------------
+
+.map-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #f1f5f9;
+}
+
+.map-canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.konva-stage-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.loading-container,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(59, 130, 246, 0.3);
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+
+
+================================================================================
+文件路径: components\MapCanvas\MapCanvas.js
+--------------------------------------------------------------------------------
+
+import { watch, nextTick, onUnmounted, watchPostEffect } from 'vue'
+import { useMapEditorStore } from '../../composables/useMapEditorStore'
+import * as managementAPI from '@/api/management'
+// 使用动态导入或确保 vite.config 已优化
+import Konva from 'konva'
+
+export function useCanvasLogic(stageContainerRef) {
+  const {
+    currentMap, loading,
+    storeareas, eventareas, otherareas, facilities,
+    selectedFeature, selectedType, selectFeature
+  } = useMapEditorStore()
+
+  let stage = null
+  let layer = null
+  let shapesLayer = null
+
+  const typeColors = {
+    storearea: '#2563eb',
+    eventarea: '#16a34a',
+    otherarea: '#f97316',
+    facility: '#8b5cf6'
+  }
+
+  // --- 初始化 Konva ---
+  const initKonva = () => {
+    console.log(currentMap)
+    if (!stageContainerRef.value || !currentMap.value) {
+        console.warn("InitKonva 中断，DOM 或数据未就绪。");
+        return;
+    }
+
+    // 清理
+    if (stage) stage.destroy()
+
+    const width = stageContainerRef.value.offsetWidth
+    const height = stageContainerRef.value.offsetHeight
+    console.log("画布容器尺寸:", width, height); // 如果这里是 0, 0，地图就看不见
+    stage = new Konva.Stage({
+      container: stageContainerRef.value,
+      width,
+      height,
+      draggable: true
+    })
+
+    layer = new Konva.Layer()
+    shapesLayer = new Konva.Layer()
+    stage.add(layer)
+    stage.add(shapesLayer)
+
+    // 滚轮缩放事件
+    stage.on('wheel', handleWheel)
+
+    drawBackground()
+    drawAllFeatures()
+  }
+
+  // --- 绘制背景 ---
+  const drawBackground = () => {
+    if (!layer) return
+    layer.destroyChildren()
+
+    // 绘制一个足够大的背景矩形用于拖拽
+    const bg = new Konva.Rect({
+      x: -5000,
+      y: -5000,
+      width: 10000,
+      height: 10000,
+      fill: '#f5f5f5',
+      stroke: '#ddd',
+      strokeWidth: 1
+    })
+    layer.add(bg)
+    layer.draw()
+  }
+
+  // --- 绘制通用多边形 ---
+  const drawPolygon = (area, type) => {
+    if (!area.geometry || !area.geometry.coordinates || !shapesLayer) return
+
+    let points = []
+    // 简单的 GeoJSON 解析 (Polygon/MultiPolygon)
+    if (area.geometry.type === 'Polygon') {
+      points = area.geometry.coordinates[0].flat()
+    } else if (area.geometry.type === 'MultiPolygon') {
+      points = area.geometry.coordinates[0][0].flat()
+    }
+
+    if (points.length < 6) return
+
+    const color = typeColors[type]
+    const poly = new Konva.Polygon({
+      points,
+      closed: true,
+      fill: `${color}30`,
+      stroke: color,
+      strokeWidth: 1,
+      draggable: true,
+      id: `${type}-${area.id}`
+    })
+
+    // 选中态
+    if (selectedFeature.value?.id === area.id && selectedType.value === type) {
+      poly.strokeWidth(2)
+      poly.fill(`${color}40`)
+      poly.shadowBlur(5)
+      poly.shadowColor(color)
+    }
+
+    poly.on('click', (e) => {
+      e.cancelBubble = true
+      selectFeature(type, area)
+    })
+
+    // 拖拽结束更新位置
+    poly.on('dragend', function() {
+      handleGeometryChange(type, area, this)
+    })
+
+    shapesLayer.add(poly)
+  }
+
+  // --- 绘制设施 (圆点) ---
+  const drawFacility = (facility) => {
+    if (!shapesLayer) return
+
+    let x = 0
+    let y = 0
+
+    // 解析坐标：优先使用 location 对象，其次解析 GeoJSON Point
+    if (facility.location && typeof facility.location.x === 'number') {
+      x = facility.location.x
+      y = facility.location.y
+    } else if (facility.geometry && facility.geometry.type === 'Point') {
+      x = facility.geometry.coordinates[0]
+      y = facility.geometry.coordinates[1]
+    } else {
+      return
+    }
+
+    const color = typeColors['facility']
+    const circle = new Konva.Circle({
+      x,
+      y,
+      radius: 10,
+      fill: `${color}80`,
+      stroke: color,
+      strokeWidth: 2,
+      draggable: true,
+      id: `facility-${facility.id}`
+    })
+
+    if (selectedFeature.value?.id === facility.id && selectedType.value === 'facility') {
+      circle.strokeWidth(3)
+      circle.shadowBlur(8)
+      circle.shadowColor(color)
+    }
+
+    circle.on('click', (e) => {
+      e.cancelBubble = true
+      selectFeature('facility', facility)
+    })
+
+    circle.on('dragend', function() {
+      handleFacilityLocationChange(facility, this)
+    })
+
+    shapesLayer.add(circle)
+  }
+
+  // --- 绘制所有要素 ---
+  const drawAllFeatures = () => {
+    if (!shapesLayer) return
+    shapesLayer.destroyChildren()
+
+    storeareas.value.forEach(a => drawPolygon(a, 'storearea'))
+    eventareas.value.forEach(a => drawPolygon(a, 'eventarea'))
+    otherareas.value.forEach(a => drawPolygon(a, 'otherarea'))
+    facilities.value.forEach(f => drawFacility(f))
+
+    shapesLayer.draw()
+  }
+
+  // --- 事件处理：多边形几何更新 ---
+  const handleGeometryChange = async (type, area, shapeNode) => {
+    const points = shapeNode.points()
+    const x = shapeNode.x()
+    const y = shapeNode.y()
+
+    // Konva 的 points 是相对坐标，需要加上 offset (x, y) 转换为绝对坐标
+    const absCoords = []
+    for(let i=0; i<points.length; i+=2) {
+      absCoords.push([points[i] + x, points[i+1] + y])
+    }
+    // 闭合多边形
+    if(absCoords.length > 0) absCoords.push([...absCoords[0]])
+
+    // 1. 更新本地数据
+    area.geometry = { type: 'Polygon', coordinates: [absCoords] }
+
+    // 重置 shapeNode，防止 Konva 内部状态偏移累积
+    shapeNode.position({x:0, y:0})
+    shapeNode.points(absCoords.flat())
+
+    // 2. 调用 API 保存
+    try {
+      const updateFn = {
+        storearea: managementAPI.updateManagementStorearea,
+        eventarea: managementAPI.updateManagementEventarea,
+        otherarea: managementAPI.updateManagementOtherarea
+      }[type]
+
+      if (updateFn) {
+        // 注意：实际后端可能需要 WKT 或特定的 shape 格式字符串
+        // 这里假设后端接受 GeoJSON 对象或由前端序列化
+        const payload = { ...area }
+        // 如果后端在 management 接口不接受 shape/geometry，需调用 editor 接口
+        // 这里暂且复用 management 接口逻辑，实际需根据后端 editor.js 调整
+        console.log(`[Mock] Saving geometry for ${type} ${area.id}`)
+      }
+    } catch(e) {
+      console.error('Geometry save failed', e)
+    }
+  }
+
+  // --- 事件处理：设施位置更新 ---
+  const handleFacilityLocationChange = async (facility, shapeNode) => {
+    const x = shapeNode.x()
+    const y = shapeNode.y()
+
+    // 1. 更新本地
+    facility.location = { x, y }
+    // 如果有 geometry 字段也同步更新
+    if (facility.geometry) {
+      facility.geometry = { type: 'Point', coordinates: [x, y] }
+    }
+
+    // 2. 调用 API
+    try {
+      await managementAPI.updateManagementFacility(facility.id, { location: { x, y } })
+    } catch(e) {
+      console.error('Facility location save failed', e)
+    }
+  }
+
+  // --- 缩放逻辑 ---
+  const handleWheel = (e) => {
+    e.evt.preventDefault()
+    const scaleBy = 1.1
+    const oldScale = stage.scaleX()
+    const pointer = stage.getPointerPosition()
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldScale,
+      y: (pointer.y - stage.y()) / oldScale,
+    }
+    const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy
+    stage.scale({ x: newScale, y: newScale })
+    const newPos = {
+      x: pointer.x - mousePointTo.x * newScale,
+      y: pointer.y - mousePointTo.y * newScale,
+    }
+    stage.position(newPos)
+    stage.batchDraw()
+  }
+
+  // --- 监听器 ---
+  watch(
+    [storeareas, eventareas, otherareas, facilities, selectedFeature],
+    () => { if (stage) drawAllFeatures() },
+    { deep: true }
+  )
+
+  watchPostEffect(() => {
+    // 这个回调函数会在 currentMap 或其他依赖项变化，并且 DOM 更新之后执行
+    if (currentMap.value && stageContainerRef.value) {
+        // 当地图数据和 DOM 都准备好时，初始化或重新初始化 Konva
+        initKonva();
+    }
+
+    // 你也可以在这里直接调用绘制函数，因为它也依赖于 storeareas 等 ref
+    if (shapesLayer) {
+        drawAllFeatures();
+    }
+  });
+
+  onUnmounted(() => {
+    if(stage) stage.destroy()
+  })
+
+  return {}
+}
+
+
+
+================================================================================
+文件路径: components\PropertyPanel\PropertyPanel.css
+--------------------------------------------------------------------------------
+
+.properties-panel {
+  width: 320px;
+  background-color: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #374151;
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.panel-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+}
+
+.properties-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background-color: #ffffff;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.toggle-switch {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  background-color: #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.toggle-label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.toggle-input:checked + .toggle-label {
+  background-color: #3b82f6;
+}
+
+.toggle-input:checked + .toggle-label::after {
+  transform: translateX(24px);
+}
+
+.toggle-text {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #ffffff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 0.375rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+
+
+================================================================================
+文件路径: components\PropertyPanel\PropertyPanel.js
+--------------------------------------------------------------------------------
+
+import { reactive, ref, watch } from 'vue'
+import { useMapEditorStore } from '../../composables/useMapEditorStore'
+import * as managementAPI from '@/api/management'
+
+export function usePropertiesLogic() {
+  const { selectedFeature, selectedType, updateLocalFeature } = useMapEditorStore()
+  const submitting = ref(false)
+  const errorMessage = ref('')
+
+  const form = reactive({
+    name: '',
+    type: '0',
+    description: '',
+    is_active: true
+  })
+
+  const typeNames = {
+    storearea: '店铺',
+    eventarea: '活动区域',
+    otherarea: '其他区域',
+    facility: '设施'
+  }
+
+  const getTypeName = () => typeNames[selectedType.value] || '区域'
+
+  // 监听选中变更，回填表单
+  watch(selectedFeature, (newVal) => {
+    if (newVal) {
+      form.name = newVal.name || newVal.store_name || newVal.event_name || newVal.description || ''
+      form.type = newVal.store_type?.toString() || newVal.type_id?.toString() || newVal.event_type?.toString() || newVal.type?.toString() || '0'
+      form.description = newVal.description || ''
+      form.is_active = newVal.is_active !== undefined ? newVal.is_active : true
+    }
+  })
+
+  const save = async () => {
+    if (!selectedFeature.value || !selectedType.value) return
+    submitting.value = true
+    errorMessage.value = ''
+
+    try {
+      // 构造提交数据
+      const submitData = {
+        name: form.name,
+        description: form.description,
+        is_active: form.is_active
+      }
+
+      // 根据类型适配字段
+      if (selectedType.value === 'storearea') {
+        submitData.store_name = form.name
+        submitData.store_type = parseInt(form.type)
+        delete submitData.name
+      } else if (selectedType.value === 'eventarea') {
+        submitData.event_name = form.name
+        submitData.event_type = parseInt(form.type)
+        delete submitData.name
+      } else if (selectedType.value === 'otherarea') {
+        submitData.type_id = parseInt(form.type)
+      } else if (selectedType.value === 'facility') {
+        submitData.description = form.name // 设施通常用 description 作名称
+        submitData.type = parseInt(form.type)
+        delete submitData.name
+      }
+
+      // 调用 API
+      await managementAPI.updateAreaByTypeAndId(selectedType.value, selectedFeature.value.id, submitData)
+
+      // 更新本地数据，实现即时反馈
+      const localUpdate = { ...submitData }
+      // 还原回本地字段名
+      if (selectedType.value === 'storearea') localUpdate.store_name = form.name
+      else if (selectedType.value === 'eventarea') localUpdate.event_name = form.name
+      else if (selectedType.value === 'otherarea') localUpdate.name = form.name
+
+      updateLocalFeature(localUpdate)
+
+    } catch (error) {
+      console.error('保存属性失败:', error)
+      errorMessage.value = `保存失败: ${error.message || '未知错误'}`
+    } finally {
+      submitting.value = false
+    }
+  }
+
+  return {
+    form,
+    selectedFeature,
+    selectedType,
+    save,
+    submitting,
+    errorMessage,
+    getTypeName
+  }
+}
+
+
+
+================================================================================
+文件路径: components\Sidebar\Sidebar.css
+--------------------------------------------------------------------------------
+
+.sidebar {
+  width: 280px;
+  background-color: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sidebar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: #374151;
+}
+
+.layer-groups {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.layer-group {
+  margin-bottom: 0.5rem;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.layer-group-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background-color: #f3f4f6;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  user-select: none;
+}
+
+.layer-icon {
+  font-size: 1rem;
+}
+
+.layer-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.layer-toggle {
+  font-size: 0.75rem;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+
+.layer-toggle.expanded {
+  transform: rotate(0deg); /* 根据具体字符调整，此处仅占位 */
+}
+
+.layer-items {
+  padding: 0.25rem 0;
+  background-color: #f9fafb;
+}
+
+.layer-item {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.layer-item:hover {
+  background-color: #f3f4f6;
+}
+
+.layer-item.selected {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-right: 3px solid #3b82f6;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+
+
+================================================================================
+文件路径: components\Sidebar\Sidebar.js
+--------------------------------------------------------------------------------
+
+import { reactive } from 'vue'
+import { useMapEditorStore } from '../../composables/useMapEditorStore'
+
+export function useSidebarLogic() {
+  const {
+    storeareas, eventareas, otherareas, facilities,
+    selectFeature, selectedFeature, selectedType
+  } = useMapEditorStore()
+
+  const expandedLayers = reactive({
+    storearea: true,
+    eventarea: true,
+    otherarea: true,
+    facility: true
+  })
+
+  const toggleLayer = (type) => {
+    expandedLayers[type] = !expandedLayers[type]
+  }
+
+  const handleSelect = (type, item) => {
+    selectFeature(type, item)
+  }
+
+  const isSelected = (type, id) => {
+    return selectedType.value === type && selectedFeature.value?.id === id
+  }
+
+  return {
+    storeareas,
+    eventareas,
+    otherareas,
+    facilities,
+    expandedLayers,
+    toggleLayer,
+    handleSelect,
+    isSelected
+  }
+}
+
+
+
+================================================================================
+文件路径: composables\useMapEditorStore.js
+--------------------------------------------------------------------------------
+
+import { ref, reactive } from 'vue'
+import { listMaps, getMapById } from '@/api/map'
+import * as managementAPI from '@/api/management'
+
+// 定义全局响应式状态（单例模式，类似简易 Pinia）
+const maps = ref([])
+const currentMapId = ref('')
+const currentMap = ref(null)
+const loading = ref(false)
+
+// 图层数据
+const storeareas = ref([])
+const eventareas = ref([])
+const otherareas = ref([])
+const facilities = ref([])
+
+// 选中状态
+const selectedType = ref('')
+const selectedFeature = ref(null)
+
+// 辅助函数：合并数据
+const mergeData = (mapData, mgmtData) => {
+  if (mapData && mapData.length > 0) {
+    if (mgmtData && mgmtData.length > 0) {
+      const mapDataById = new Map(mapData.map(item => [item.id, item]))
+      mgmtData.forEach(item => {
+        if (!mapDataById.has(item.id)) {
+          mapDataById.set(item.id, item)
+        } else {
+          Object.assign(mapDataById.get(item.id), item)
+        }
+      })
+      return Array.from(mapDataById.values())
+    }
+    return mapData
+  }
+  return mgmtData || []
+}
+
+export function useMapEditorStore() {
+
+  // 加载地图列表
+  const loadMaps = async () => {
+    loading.value = true
+    try {
+      const response = await listMaps()
+      maps.value = response.data || response
+      if (maps.value.length > 0 && !currentMapId.value) {
+        currentMapId.value = maps.value[0].id
+        await loadCurrentMap()
+      }
+    } catch (error) {
+      console.error('加载地图列表失败:', error)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 加载当前地图详情及所有区域数据
+  const loadCurrentMap = async () => {
+    if (!currentMapId.value) return
+    loading.value = true
+
+    try {
+      // 1. 获取地图详情 (包含 geometry)
+      const mapRes = await getMapById(currentMapId.value)
+      const mapData = mapRes.data || mapRes
+      currentMap.value = mapData
+      // 2. 获取管理数据 (包含属性)
+      const [sData, eData, oData, fData] = await Promise.all([
+        managementAPI.listManagementStoreareas(),
+        managementAPI.listManagementEventareas(),
+        managementAPI.listManagementOtherareas(),
+        managementAPI.listManagementFacilities()
+      ])
+
+      const mapId = currentMapId.value
+
+      // 3. 过滤并合并
+      storeareas.value = mergeData(
+        mapData.stores || mapData.storeareas,
+        (sData.data || sData).filter(i => i.map_id == mapId)
+      )
+      eventareas.value = mergeData(
+        mapData.events || mapData.eventareas,
+        (eData.data || eData).filter(i => i.map_id == mapId)
+      )
+      otherareas.value = mergeData(
+        mapData.other_areas || mapData.otherareas,
+        (oData.data || oData).filter(i => i.map_id == mapId)
+      )
+      facilities.value = mergeData(
+        mapData.facilities,
+        (fData.data || fData).filter(i => i.map_id == mapId)
+      )
+
+      // 清空选中
+      selectedFeature.value = null
+      selectedType.value = ''
+    } catch (error) {
+      console.error('加载地图详情失败:', error)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 选中功能
+  const selectFeature = (type, feature) => {
+    selectedType.value = type
+    selectedFeature.value = feature
+  }
+
+  // 更新本地单个区域数据（用于保存属性后的即时回显）
+  const updateLocalFeature = (updatedData) => {
+    if (!selectedFeature.value) return
+    Object.assign(selectedFeature.value, updatedData)
+  }
+
+  // 添加本地新区域
+  const addLocalFeature = (type, feature) => {
+    if (type === 'storearea') storeareas.value.push(feature)
+    else if (type === 'eventarea') eventareas.value.push(feature)
+    else if (type === 'otherarea') otherareas.value.push(feature)
+  }
+
+  return {
+    maps,
+    currentMapId,
+    currentMap,
+    loading,
+    storeareas,
+    eventareas,
+    otherareas,
+    facilities,
+    selectedType,
+    selectedFeature,
+    loadMaps,
+    loadCurrentMap,
+    selectFeature,
+    updateLocalFeature,
+    addLocalFeature
+  }
+}
+
+

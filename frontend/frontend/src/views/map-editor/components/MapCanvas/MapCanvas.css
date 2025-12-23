@@ -1,0 +1,50 @@
+.map-canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background-color: #f1f5f9;
+}
+
+.map-canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.konva-stage-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.loading-container,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 1rem;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(59, 130, 246, 0.3);
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
