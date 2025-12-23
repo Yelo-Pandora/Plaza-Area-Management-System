@@ -1,4 +1,4 @@
-from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext, FacilityContext, AdminContext
+from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext, FacilityContext
 from .interfaces import IValidationService, IDataProcessing
 from core.models import Admin
 from django.contrib.auth.hashers import make_password, check_password
