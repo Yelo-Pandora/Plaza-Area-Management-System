@@ -1,26 +1,43 @@
 <!-- 活动列表/详情 -->
 <view class="container">
 	<block wx:if="!eventDetail">
-		<view class="section-title">活动列表</view>
-		<!-- 类型筛选 -->
-		<view class="type-filters">
-			<view class="chip {{selectedType=='' ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="">全部</view>
-			<block wx:for="{{types}}" wx:for-item="type">
-				<view class="chip {{selectedType==type ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="{{type}}">{{type}}</view>
-			</block>
+		<!-- 类型筛选（吸顶） -->
+		<view class="sticky-filter">
+			<view class="type-filters">
+				<view class="chip {{selectedType=='' ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="">全部</view>
+				<block wx:for="{{types}}" wx:for-item="type">
+					<view class="chip {{selectedType==type.key ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="{{type.key}}">{{type.label}}</view>
+				</block>
+			</view>
 		</view>
+		<!-- 吸顶占位，防止遮挡内容 -->
+		<view class="sticky-spacer" />
 		<block wx:for="{{filteredEvents}}" wx:for-item="item" wx:key="id">
 			<view class="activity-item" data-id="{{item.id}}" bindtap="openActivity">
-				<view class="act-title">{{item.name}}</view>
-				<view class="act-meta">{{item.type_name || ''}}</view>
-				<view class="act-desc" wx:if="{{item.description}}">{{item.description}}</view>
-				<view class="act-time">{{item.start}}<text wx:if="{{item.end}}"> - {{item.end}}</text></view>
+				<view class="activity-card">
+					<!-- 缩略图 -->
+					<view class="thumb-wrap">
+						<image class="thumb" src="{{item.image_url || '/images/default-event.png'}}" mode="cover" />
+					</view>
+					<!-- 内容 -->
+					<view class="content">
+						<view class="title-row">
+							<view class="act-title">{{item.name}}</view>
+							<view class="badge" bindtap="applyFilter" data-type="{{(item.area_type_codes && item.area_type_codes[0]) ? item.area_type_codes[0] : 'other'}}">{{item.area_type_label || item.type_name || '其他'}}</view>
+						</view>
+						<view class="act-desc desc-clamp" wx:if="{{item.description}}">{{item.description}}</view>
+						<view class="card-footer">
+							<view class="act-time">{{item.start}}<text wx:if="{{item.end}}"> - {{item.end}}</text></view>
+							<view class="event-status {{item.is_ongoing ? 'status-enabled' : 'status-disabled'}}">{{item.is_ongoing ? '进行中' : '已截止'}}</view>
+						</view>
+					</view>
+				</view>
 			</view>
 		</block>
-		<view wx:if="!filteredEvents.length" class="empty">暂无活动</view>
+
 	</block>
 
-	<!-- 弹窗：活动与区域详情 -->
+	<!-- 弹窗：显示活动关联的区域信息 -->
 	<block wx:if="{{showModal}}">
 		<view class="modal-overlay" bindtap="closeModal">
 			<view class="modal" catchtap>
@@ -29,11 +46,63 @@
 					<view class="modal-close" bindtap="closeModal">关闭</view>
 				</view>
 				<view class="modal-body">
-					<view class="modal-row">时间：{{modalEvent.start}}<text wx:if="{{modalEvent.end}}"> - {{modalEvent.end}}</text></view>
-					<view class="modal-row">类型：{{modalEvent.type_name || '-'}}</view>
-					<view class="modal-row">描述：{{modalEvent.description || '-'}}</view>
 					<view class="modal-row" wx:if="{{modalLoading}}">加载区域信息...</view>
-					<view class="modal-row" wx:if="{{modalArea}}">关联区域：{{modalArea.name || modalArea.title || modalArea.id || '-'}}</view>
+					<block wx:for="{{modalAreas}}" wx:for-item="area" wx:key="id">
+						<view class="area-card">
+							<view class="area-title-row">
+								<!-- 若为 eventarea，标题固定为“活动区域”；否则显示店铺/区域名称（若有） -->
+								<block wx:if="{{area.area_type=='eventarea'}}">
+									<view class="area-title">活动区域</view>
+								</block>
+								<block wx:elif="{{area.store_name || area.name || area.title}}">
+									<view class="area-title">{{area.store_name || area.name || area.title}}</view>
+									<view class="area-badge">
+										<block wx:if="{{area.area_type=='storearea'}}">商铺</block>
+										<block wx:else>{{area.area_type}}</block>
+									</view>
+								</block>
+							</view>
+							<!-- 当无标题时：把标签放到下一行的右侧显示，避免单独一行只出现标签 -->
+							<block wx:if="{{!(area.store_name || area.name || area.title)}}">
+								<view class="area-badge-line">
+									<!-- 仅在非 eventarea 时显示标签 -->
+									<block wx:if="{{area.area_type!='eventarea'}}">
+										<view class="area-badge">
+											<block wx:if="{{area.area_type=='storearea'}}">商铺</block>
+											<block wx:else>{{area.area_type}}</block>
+										</view>
+									</block>
+								</view>
+							</block>
+							<view class="area-desc desc-clamp">{{area.description || '-'}}</view>
+							<view class="area-footer">
+								<view class="area-meta">
+									<view wx:if="{{area.organizer_name}}">负责人：{{area.organizer_name}}</view>
+									<view wx:if="{{area.organizer_phone}}">电话：{{area.organizer_phone}}</view>
+									<!-- 仅在商铺区域显示店主、联系方式、营业时间 -->
+									<block wx:if="{{area.area_type=='storearea'}}">
+										<view wx:if="{{area.owner_name}}">店主：{{area.owner_name}}</view>
+										<view wx:if="{{area.owner_phone}}">联系方式：{{area.owner_phone}}</view>
+										<!-- 优先显示 open_time - close_time 格式，其次单个字段，再 fallback 到 business_hours -->
+										<block wx:if="{{area.open_time && area.close_time}}">
+											<view>营业时间：{{area.open_time}} - {{area.close_time}}</view>
+										</block>
+										<block wx:elif="{{area.open_time}}">
+											<view>营业时间：{{area.open_time}}</view>
+										</block>
+										<block wx:elif="{{area.close_time}}">
+											<view>营业时间：{{area.close_time}}</view>
+										</block>
+										<block wx:elif="{{area.business_hours}}">
+											<view>营业时间：{{area.business_hours}}</view>
+										</block>
+									</block>
+								</view>
+								<view class="area-status-right {{area.is_active ? 'status-enabled' : 'status-disabled'}}">{{area.is_active ? '使用中' : '停用'}}</view>
+							</view>
+						</view>
+					</block>
+					<view wx:if="{{!modalAreas.length && !modalLoading}}">无关联区域</view>
 				</view>
 			</view>
 		</view>
