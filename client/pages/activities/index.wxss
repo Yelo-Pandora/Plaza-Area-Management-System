@@ -1,5 +1,13 @@
 /* pages/activities/index.wxss */
 
+/* 覆盖全局 .container 样式，使本页面内容从顶部开始排列 */
+.container {
+	align-items: stretch;
+	justify-content: flex-start;
+	padding: 0; /* 去掉全局顶部大间距 */
+}
+
+
 .section-title {
 	font-size: 20px;
 	font-weight: bold;
@@ -25,31 +33,96 @@
 	color: #fff;
 }
 
-.activity-item {
+/* 吸顶筛选栏 */
+.sticky-filter {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1000;
 	background: #fff;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.sticky-spacer {
+	height: 64px; /* 与 sticky-filter 的实际高度保持一致，避免遮挡 */
+}
+
+.activity-item {
+	background: transparent;
 	margin: 8px 12px;
-	padding: 12px;
+}
+.activity-card {
+	background: #fff;
+	padding: 10px;
+	border-radius: 10px;
+	box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+}
+.thumb-wrap {
+	width: 76px;
+	height: 76px;
+	flex: 0 0 76px;
 	border-radius: 8px;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+	overflow: hidden;
+	margin-right: 12px;
+	background: #f5f5f5;
+}
+.thumb {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.content {
+	flex: 1 1 auto;
+}
+.title-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
 }
 .act-title {
 	font-size: 16px;
 	font-weight: 600;
-	margin-bottom: 6px;
+	margin-bottom: 4px;
+	color: #111;
 }
-.act-meta {
-	color: #666;
-	font-size: 12px;
-	margin-bottom: 6px;
+.badge {
+	background: #eef6ff;
+	color: #007aff;
+	font-size: 11px;
+	padding: 4px 8px;
+	border-radius: 12px;
 }
 .act-desc {
-	color: #333;
+	color: #444;
 	font-size: 13px;
-	margin-bottom: 6px;
+	margin: 6px 0;
+}
+.desc-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 .act-time {
-	color: #999;
+	color: #888;
 	font-size: 12px;
+}
+.card-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 6px;
+}
+.event-status {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 10px;
+	display: inline-block;
+	min-width: 44px;
+	text-align: center;
 }
 .empty {
 	padding: 30px;
@@ -94,4 +167,79 @@
 .modal-row {
 	margin-bottom: 8px;
 	color: #333;
+}
+.area-card {
+	background: #fff;
+	border-radius: 8px;
+	padding: 10px;
+	margin-bottom: 10px;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.area-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 6px;
+}
+.area-status {
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+}
+.area-title-row { margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center; }
+.area-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #111;
+}
+.area-badge { order: 2; }
+.area-badge {
+	font-size: 11px;
+	color: #007aff;
+	background: #eef6ff;
+	padding: 4px 8px;
+	border-radius: 10px;
+}
+
+.area-badge-line { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+
+.modal-event-status {
+	font-size: 12px;
+	color: #007aff;
+	margin-left: 8px;
+}
+.area-desc {
+	font-size: 13px;
+	color: #444;
+	margin-bottom: 6px;
+}
+.area-meta {
+	font-size: 12px;
+	color: #666;
+}
+.area-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.area-status-right {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 8px;
+	display: inline-block;
+	min-width: 44px;
+	text-align: center;
+}
+
+/* 状态通用样式 */
+.status-enabled {
+	background: #28a745; /* 绿色 */
+	color: #fff;
+	box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+}
+.status-disabled {
+	background: #ff4d4f; /* 红色 - 已截止/停用 */
+	color: #fff;
+	border: 1px solid #d9363e;
+	box-shadow: 0 1px 0 rgba(217,54,62,0.08);
 }

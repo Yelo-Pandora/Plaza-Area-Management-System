@@ -75,7 +75,8 @@ def get_simple_event_serializer():
     class SimpleEventSerializer(serializers.ModelSerializer):
         class Meta:
             model = Event
-            fields = ['id', 'event_name', 'start_date', 'end_date']
+            # 增加 is_active、description 与 image_url，便于列表接口直接展示启用状态、描述与缩略图
+            fields = ['id', 'event_name', 'start_date', 'end_date', 'is_active', 'description', 'image_url']
 
     return SimpleEventSerializer
 
