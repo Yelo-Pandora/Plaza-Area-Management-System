@@ -1,1 +1,88 @@
 /* pages/search/index.wxss */
+.search-page {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.search-header {
+  padding: 30rpx 30rpx 8rpx 30rpx;
+  background-color: #f7f7f7;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: #e6f3ff; /* 淡蓝色底色 */
+  height: 88rpx;
+  border-radius: 44rpx;
+  padding: 0 10rpx 0 0; 
+  box-sizing: border-box;
+}
+
+/* 左侧选择器容器 */
+.type-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20rpx 0 30rpx;
+  height: 88rpx;
+}
+
+.type-selector text {
+  font-size: 32rpx;
+  color: #333;
+  white-space: nowrap;
+}
+
+/* 下拉小箭头 */
+.arrow-down {
+  width: 0;
+  height: 0;
+  border-left: 8rpx solid transparent;
+  border-right: 8rpx solid transparent;
+  border-top: 10rpx solid #666;
+  margin-left: 10rpx;
+}
+
+/* 垂直分割线 */
+.search-divider {
+  width: 1rpx;
+  height: 30rpx;
+  background-color: #ccc;
+  margin: 0 10rpx;
+}
+
+.search-input {
+  flex: 1;
+  height: 100%;
+  font-size: 32rpx;
+  color: #333;
+  padding-left: 10rpx;
+}
+
+.placeholder {
+  color: #99abbd;
+}
+
+.search-btn {
+  background-color: #1AAD19;
+  color: #ffffff;
+  font-size: 32rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  padding: 0 34rpx;
+  border-radius: 34rpx;
+  font-weight: 500;
+}
+
+/* 结果列表容器 */
+.results-container {
+  padding-bottom: 40rpx;
+}
+
+/* 覆盖一部分全局样式，让结果看起来更精致 */
+.result-item:last-child {
+  border-bottom: none;
+}

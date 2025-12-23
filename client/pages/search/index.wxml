@@ -1,18 +1,64 @@
-<!-- 搜索：店铺 & 活动 -->
-<view class="container">
-	<view class="search-box">
-		<input placeholder="请输入关键词（店铺/活动名）" bindinput="onInput" value="{{keyword}}" />
-		<button bindtap="doSearch">搜索</button>
+<!-- 搜索：区域 & 活动 -->
+<view class="search-page">
+	<view class="search-header">
+		<view class="search-bar">
+			<!-- 左侧下拉菜单 -->
+			<picker bindchange="bindTypeChange" value="{{typeIndex}}" range="{{searchTypes}}">
+				<view class="type-selector">
+					<text>{{searchTypes[typeIndex]}}</text>
+					<view class="arrow-down"></view>
+				</view>
+			</picker>		
+			<!-- 垂直分割线 -->
+			<view class="search-divider"></view>
+			<!-- 输入框 -->
+			<input 
+				class="search-input" 
+				placeholder="{{placeholderList[typeIndex]}}" 
+				placeholder-class="placeholder"
+				value="{{keyword}}" 
+				bindinput="onInput"
+				confirm-type="search"
+				bindconfirm="doSearch"
+			/>
+			<!-- 搜索按钮 -->
+			<view class="search-btn" bindtap="doSearch">搜索</view>
+		</view>
 	</view>
 
-	<view class="results">
-		<view class="section-title">店铺结果</view>
-		<block wx:for="{{storeResults}}" wx:for-item="item" wx:key="id">
-			<view class="result-item" bindtap="openStore" data-id="{{item.id}}">{{item.name}}</view>
-		</block>
-		<view class="section-title">活动结果</view>
-		<block wx:for="{{eventResults}}" wx:for-item="item" wx:key="id">
-			<view class="result-item" bindtap="openEvent" data-id="{{item.id}}">{{item.name}}</view>
-		</block>
-	</view>
+	<!-- 搜索结果区域 -->
+  	<view class="results-container">
+		<!-- 店铺搜索结果 -->
+		<view class="section" wx:if="{{storeResults.length > 0}}">
+			<view class="section-title">店铺</view>
+			<view 
+				class="result-item" 
+				wx:for="{{storeResults}}" 
+				wx:key="id" 
+				bindtap="openStore" 
+				data-id="{{item.id}}"
+			>
+				<view class="act-title">{{item.store_name}}</view>
+				<view class="act-meta">营业时间：{{item.open_time}} 至 {{item.close_time}}</view>
+			</view>
+		</view>
+		<!-- 活动搜索结果 -->
+		<view class="section" wx:if="{{eventResults.length > 0}}">
+			<view class="section-title">活动</view>
+			<view 
+				class="result-item" 
+				wx:for="{{eventResults}}" 
+				wx:key="id" 
+				bindtap="openEvent" 
+				data-id="{{item.id}}"
+			>
+				<view class="act-title">{{item.event_name}}</view>
+				<view class="act-meta">活动时间：{{item.start_date}} 至 {{item.end_date}}</view>
+			</view>
+		</view>
+		<!-- 只有当点击过搜索，且两个数组都为空时，才显示 -->
+		<view class="empty" wx:if="{{hasSearched && storeResults.length === 0 && eventResults.length === 0}}">
+			未找到相关内容
+		</view>
+  	</view>
 </view>
