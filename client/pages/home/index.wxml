@@ -1,2 +1,24 @@
-<!--pages/home/index.wxml-->
-<text>pages/home/index.wxml</text>
+<!-- 首页：地图预览 + 推荐活动 -->
+<view class="container">
+	<view class="map-area">
+		<map id="mallMap" show-compass scale="16" longitude="114.0" latitude="22.6" style="width:100%;height:240px;" bindregionchange="onRegionChange">
+			<cover-view class="map-overlay">
+				<button bindtap="openFullMap">打开地图查看</button>
+			</cover-view>
+		</map>
+	</view>
+
+	<view class="section">
+		<view class="section-title">推荐活动</view>
+		<block wx:if="recommended.length">
+			<block wx:for="{{recommended}}" wx:key="id">
+				<view class="activity-item" bindtap="openActivity" data-id="{{item.id}}">
+					<view class="act-title">{{item.name}}</view>
+					<view class="act-meta">{{item.type_name || ''}} · 距离：{{item.distance || '-'}}</view>
+				</view>
+			</block>
+		</block>
+		<view wx:if="!recommended.length" class="empty">暂无推荐活动</view>
+	</view>
+  
+</view>

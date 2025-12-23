@@ -1,66 +1,61 @@
 // pages/conf/index.js
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    loggedIn: false,
+    profile: {},
+    login: { account: '', password: '' }
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
   onLoad(options) {
-
+    const p = wx.getStorageSync('wxProfile') || null
+    if (p) this.setData({ loggedIn: true, profile: p })
   },
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
   onShow() {
-
+    const p = wx.getStorageSync('wxProfile') || null
+    if (p) this.setData({ loggedIn: true, profile: p })
   },
 
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
+  onAccount(e) { this.setData({ 'login.account': e.detail.value }) },
+  onPassword(e) { this.setData({ 'login.password': e.detail.value }) },
 
+  doLogin() {
+    // 使用微信授权获取用户信息（仅本地存储）
+    if (wx.getUserProfile) {
+      wx.getUserProfile({
+        desc: '用于登录并显示个人信息',
+        success: (res) => {
+          const user = res.userInfo
+          wx.setStorageSync('wxProfile', user)
+          this.setData({ loggedIn: true, profile: user })
+          wx.showToast({ title: '登录成功' })
+        },
+        fail: () => {
+          wx.showToast({ title: '授权失败', icon: 'none' })
+        }
+      })
+    } else {
+      // 兼容旧版
+      wx.getUserInfo({
+        success: (res) => {
+          const user = res.userInfo
+          wx.setStorageSync('wxProfile', user)
+          this.setData({ loggedIn: true, profile: user })
+          wx.showToast({ title: '登录成功' })
+        },
+        fail: () => wx.showToast({ title: '授权失败', icon: 'none' })
+      })
+    }
   },
 
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
+  doLogout() {
+    wx.removeStorageSync('wxProfile')
+    this.setData({ loggedIn: false, profile: {}, login: { account: '', password: '' } })
+    wx.showToast({ title: '已登出', icon: 'success' })
   },
 
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
+  openFavorites() { wx.showToast({ title: '我的收藏（占位）', icon: 'none' }) },
+  openMyEvents() { wx.showToast({ title: '我的活动（占位）', icon: 'none' }) },
+  openSettings() { wx.showToast({ title: '设置（占位）', icon: 'none' }) }
 
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
-  }
 })

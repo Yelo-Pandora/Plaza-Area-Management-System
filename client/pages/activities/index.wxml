@@ -1,2 +1,41 @@
-<!--pages/activities/index.wxml-->
-<text>pages/activities/index.wxml</text>
+<!-- 活动列表/详情 -->
+<view class="container">
+	<block wx:if="!eventDetail">
+		<view class="section-title">活动列表</view>
+		<!-- 类型筛选 -->
+		<view class="type-filters">
+			<view class="chip {{selectedType=='' ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="">全部</view>
+			<block wx:for="{{types}}" wx:for-item="type">
+				<view class="chip {{selectedType==type ? 'chip-selected' : ''}}" bindtap="applyFilter" data-type="{{type}}">{{type}}</view>
+			</block>
+		</view>
+		<block wx:for="{{filteredEvents}}" wx:for-item="item" wx:key="id">
+			<view class="activity-item" data-id="{{item.id}}" bindtap="openActivity">
+				<view class="act-title">{{item.name}}</view>
+				<view class="act-meta">{{item.type_name || ''}}</view>
+				<view class="act-desc" wx:if="{{item.description}}">{{item.description}}</view>
+				<view class="act-time">{{item.start}}<text wx:if="{{item.end}}"> - {{item.end}}</text></view>
+			</view>
+		</block>
+		<view wx:if="!filteredEvents.length" class="empty">暂无活动</view>
+	</block>
+
+	<!-- 弹窗：活动与区域详情 -->
+	<block wx:if="{{showModal}}">
+		<view class="modal-overlay" bindtap="closeModal">
+			<view class="modal" catchtap>
+				<view class="modal-header">
+					<view class="modal-title">{{modalEvent.name}}</view>
+					<view class="modal-close" bindtap="closeModal">关闭</view>
+				</view>
+				<view class="modal-body">
+					<view class="modal-row">时间：{{modalEvent.start}}<text wx:if="{{modalEvent.end}}"> - {{modalEvent.end}}</text></view>
+					<view class="modal-row">类型：{{modalEvent.type_name || '-'}}</view>
+					<view class="modal-row">描述：{{modalEvent.description || '-'}}</view>
+					<view class="modal-row" wx:if="{{modalLoading}}">加载区域信息...</view>
+					<view class="modal-row" wx:if="{{modalArea}}">关联区域：{{modalArea.name || modalArea.title || modalArea.id || '-'}}</view>
+				</view>
+			</view>
+		</view>
+	</block>
+</view>

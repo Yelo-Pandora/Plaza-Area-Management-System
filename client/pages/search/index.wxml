@@ -1,2 +1,18 @@
-<!--pages/search/index.wxml-->
-<text>pages/search/index.wxml</text>
+<!-- 搜索：店铺 & 活动 -->
+<view class="container">
+	<view class="search-box">
+		<input placeholder="请输入关键词（店铺/活动名）" bindinput="onInput" value="{{keyword}}" />
+		<button bindtap="doSearch">搜索</button>
+	</view>
+
+	<view class="results">
+		<view class="section-title">店铺结果</view>
+		<block wx:for="{{storeResults}}" wx:for-item="item" wx:key="id">
+			<view class="result-item" bindtap="openStore" data-id="{{item.id}}">{{item.name}}</view>
+		</block>
+		<view class="section-title">活动结果</view>
+		<block wx:for="{{eventResults}}" wx:for-item="item" wx:key="id">
+			<view class="result-item" bindtap="openEvent" data-id="{{item.id}}">{{item.name}}</view>
+		</block>
+	</view>
+</view>

@@ -1,2 +1,15 @@
-<!--pages/navigation/index.wxml-->
-<text>pages/navigation/index.wxml</text>
+<!-- 导航：输入起点终点，调用后端路径规划接口 -->
+<view class="container">
+	<view class="section">
+		<view class="row"><input placeholder="起点经度" bindinput="onStartX" value="{{start.x}}" /></view>
+		<view class="row"><input placeholder="起点纬度" bindinput="onStartY" value="{{start.y}}" /></view>
+		<view class="row"><input placeholder="终点经度" bindinput="onEndX" value="{{end.x}}" /></view>
+		<view class="row"><input placeholder="终点纬度" bindinput="onEndY" value="{{end.y}}" /></view>
+		<button bindtap="doRoute">开始导航</button>
+	</view>
+
+	<view class="section" wx:if="routeResult">
+		<view class="section-title">规划结果</view>
+		<view>距离：{{routeResult.distance}} 米</view>
+	</view>
+</view>

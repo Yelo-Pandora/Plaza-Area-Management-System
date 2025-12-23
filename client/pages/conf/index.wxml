@@ -1,2 +1,28 @@
-<!--pages/conf/index.wxml-->
-<text>pages/conf/index.wxml</text>
+<!-- 我的页面 -->
+<view class="container">
+	<view class="section">
+		<block wx:if="loggedIn">
+			<view class="profile">
+				<view class="avatar"></view>
+				<view>
+					<view class="user-name">{{profile.name || profile.account}}</view>
+					<view class="detail-meta">ID: {{profile.id}}</view>
+				</view>
+			</view>
+			<view class="option-list">
+				<view class="option-item" bindtap="openFavorites">我的收藏</view>
+				<view class="option-item" bindtap="openMyEvents">我的活动</view>
+				<view class="option-item" bindtap="openSettings">设置</view>
+			</view>
+			<button class="btn" bindtap="doLogout">退出登录</button>
+		</block>
+
+		<block wx:if="!loggedIn">
+			<view class="login-box">
+				<input placeholder="账号" value="{{login.account}}" bindinput="onAccount" />
+				<input placeholder="密码" password value="{{login.password}}" bindinput="onPassword" />
+				<button class="btn" bindtap="doLogin">登录</button>
+			</view>
+		</block>
+	</view>
+</view>

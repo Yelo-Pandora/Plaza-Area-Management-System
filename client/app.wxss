@@ -8,3 +8,24 @@
   padding: 200rpx 0;
   box-sizing: border-box;
 } 
+
+/* 全局色彩与常用样式 */
+page, .container { background: #f7f7f7; }
+.section { width: 94%; margin: 24rpx auto; background: #fff; padding: 24rpx; border-radius: 10rpx; box-shadow: 0 2rpx 6rpx rgba(0,0,0,0.03);} 
+.section-title { font-size: 28rpx; color: #333; margin-bottom: 12rpx; }
+.activity-item, .result-item { padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.act-title { font-size: 26rpx; color: #222; }
+.act-meta, .detail-meta { font-size: 22rpx; color: #888; margin-top: 6rpx; }
+.empty { color: #999; text-align: center; padding: 40rpx 0; }
+.map-area { width: 100%; overflow: hidden; border-radius: 8rpx; }
+.map-overlay { position: absolute; right: 12rpx; top: 12rpx; }
+
+/* 我的页面 */
+.profile { display:flex; align-items:center; padding: 20rpx; }
+.avatar { width: 88rpx; height: 88rpx; border-radius: 44rpx; background: #ddd; margin-right: 20rpx; }
+.user-name { font-size: 30rpx; color:#222; }
+.option-list { margin-top: 10rpx; }
+.option-item { padding: 18rpx 0; border-bottom: 1rpx solid #efefef; display:flex; justify-content:space-between; }
+.login-box { padding: 18rpx; display:flex; flex-direction:column; }
+.login-box input { margin-bottom: 12rpx; height: 64rpx; padding: 0 12rpx; border: 1rpx solid #e6e6e6; border-radius: 6rpx; }
+.btn { background:#1AAD19; color:#fff; padding:10rpx 16rpx; border-radius:6rpx; text-align:center; }

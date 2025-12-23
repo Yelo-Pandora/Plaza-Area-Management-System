@@ -1,66 +1,31 @@
-// pages/navigation/index.js
+const util = require('../../utils/util')
+
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    start: { x: '', y: '' },
+    end: { x: '', y: '' },
+    routeResult: null
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
+  onStartX(e) { this.setData({ 'start.x': e.detail.value }) },
+  onStartY(e) { this.setData({ 'start.y': e.detail.value }) },
+  onEndX(e) { this.setData({ 'end.x': e.detail.value }) },
+  onEndY(e) { this.setData({ 'end.y': e.detail.value }) },
 
-  },
+  doRoute() {
+    const map_id = 1 // 默认 map id，可改为动态选择
+    const start = this.data.start
+    const end = this.data.end
+    if (!start.x || !start.y || !end.x || !end.y) return
 
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
+    const payload = { map_id, start: { x: parseFloat(start.x), y: parseFloat(start.y) }, end: { x: parseFloat(end.x), y: parseFloat(end.y) } }
 
-  },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
+    util.apiRequest('/guide/route/', 'POST', payload).then(res => {
+      this.setData({ routeResult: res })
+    }).catch(err => {
+      console.error('路径规划失败', err)
+      wx.showToast({ title: '路径规划失败', icon: 'none' })
+    })
   }
+
 })
