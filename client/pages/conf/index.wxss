@@ -1,0 +1,76 @@
+/* pages/conf/index.wxss */
+
+.container {
+  padding: 0;
+  margin: 0;
+}
+
+/* 将个人信息区固定并紧贴顶部 */
+.section {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  /* pages/conf/index.wxss */
+
+}
+
+  .container { padding: 0; margin: 0; }
+
+  /* 将个人信息区固定并紧贴顶部 */
+  .section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    padding-top: env(safe-area-inset-top, 0);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-sizing: border-box;
+  }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 999rpx;
+    margin-right: 12px;
+    overflow: hidden;
+  }
+
+  .user-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111;
+  }
+
+  /* profile-info 占位并水平对齐 */
+  .profile-info { flex: 1; display: flex; align-items: center; }
+
+  /* 单行容器：头像 + 昵称 + 登出按钮 */
+  .row-card { display: flex; flex-direction: row; align-items: center; width: 100%; }
+  .profile-card { padding-right: 12px; }
+
+  /* 登出按钮紧凑样式并靠右 */
+  .btn.logout { margin-left: auto; padding: 2px 6px; width: 80px; height: 28px; font-size: 13px; }
+
+  .btn {
+    background: #ff4d4f;
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+    transition: transform 0.08s ease, opacity 0.08s ease;
+  }
+  .btn:active { transform: translateY(1px); opacity: 0.92; }
+
+  .login-box { display: flex; align-items: center; }
+  .login-text { color: #007aff; font-size: 16px; }
+
+  /* 页面其余内容向下避让顶部固定区域（如果将来有内容） */
+  .page-spacer { height: 56px; }

@@ -117,6 +117,14 @@ Page({
     this.setData({ selectedType: selected })
     const list = (this.data.events || []).filter(ev => {
       if (!selected) return true
+      // 如果 types 是基于关联区域的 type 值，则 ev.area_type_codes 保存了关联区域的 type 值数组
+      if (selected === 'other') {
+        return !(ev.area_type_codes && ev.area_type_codes.length)
+      }
+      if (Array.isArray(ev.area_type_codes) && ev.area_type_codes.length) {
+        return ev.area_type_codes.includes(String(selected)) || ev.area_type_codes.includes(Number(selected))
+      }
+      // 兜底：仍保留按事件自身 type_name 的筛选（兼容老数据）
       return (ev.type_name || '其他') === selected
     })
     this.setData({ filteredEvents: list })
@@ -151,12 +159,83 @@ Page({
       console.log('parsed event list length:', Array.isArray(list) ? list.length : 0)
       // 规范化每个事件对象，确保 WXML 能正确读取字段
       const normalized = (list || []).map(it => this.normalizeEvent(it))
-      // 收集类型并设置默认筛选数据
-      const types = Array.from(new Set(normalized.map(e => e.type_name || '其他')))
-      this.setData({ events: normalized, types, selectedType: '' })
-      // 初始显示全部
+
+      // 先设置 events 与初始显示
+      this.setData({ events: normalized, selectedType: '' })
       this.setData({ filteredEvents: normalized })
-      wx.hideLoading()
+
+      // 为了按关联区域的 `type` 属性分类筛选，需要请求每个事件的关联区域ID列表，
+      // 再请求每个区域的详情以获取区域的 `type` 字段。
+      // 为减少重复请求，使用 areaCache 缓存已请求的区域详情（按 id）。
+      const areaCache = {}
+      const areaFetches = (normalized || []).map(ev => {
+        const id = ev && ev.id
+        if (!id) return Promise.resolve(null)
+        return util.apiRequest(`/search/event/${id}/areas/`).catch(() => null)
+      })
+
+      Promise.all(areaFetches).then(results => {
+        // 对每个事件，按 storearea_ids / eventarea_ids 请求对应区域详情（并缓存）
+        const detailFetches = []
+        results.forEach((r, idx) => {
+          const ev = normalized[idx]
+          ev.area_type_codes = []
+          if (!r) return
+          const storeIds = r.storearea_ids || []
+          const eventareaIds = r.eventarea_ids || []
+            // 仅请求并使用 eventarea 的 type 字段作为分类标准（忽略 storearea）
+            const idsEventarea = eventareaIds || []
+            idsEventarea.forEach(idVal => {
+              const cacheKey = `eventarea:${idVal}`
+              if (areaCache[cacheKey]) {
+                const areaTypeVal = areaCache[cacheKey].type || areaCache[cacheKey].type_id || areaCache[cacheKey].typeCode || areaCache[cacheKey].typeId
+                if (areaTypeVal !== undefined && areaTypeVal !== null) ev.area_type_codes.push(String(areaTypeVal))
+                return
+              }
+              const p = util.apiRequest(`/search/eventarea/${idVal}/`).then(detail => {
+                if (detail) {
+                  areaCache[cacheKey] = detail
+                  const areaTypeVal = detail.type || detail.type_id || detail.typeCode || detail.typeId || detail.type
+                  if (areaTypeVal !== undefined && areaTypeVal !== null) ev.area_type_codes.push(String(areaTypeVal))
+                }
+              }).catch(() => { /* ignore single area failure */ })
+              detailFetches.push(p)
+            })
+        })
+
+        return Promise.all(detailFetches).then(() => ({ normalized, areaCache }))
+      }).then(({ normalized }) => {
+        // 生成顶部筛选 types：基于收集到的 area_type_codes 映射为 label
+        const areaTypeSet = new Set()
+        normalized.forEach(ev => {
+          (ev.area_type_codes || []).forEach(t => areaTypeSet.add(String(t)))
+        })
+
+        // 示例映射：可按需调整或从后端获取更准确的映射
+        const areaTypeLabelMap = { '1': '促销活动', '2': '品牌活动', '3': '主题活动', '4': '会员活动', '5': '新品发布' }
+        const types = Array.from(areaTypeSet).map(k => ({ key: k, label: areaTypeLabelMap[k] || `类型 ${k}` }))
+
+        // 若存在没有任何 eventarea type 的活动，则加入一个 "其他" 筛选项（key: 'other'）
+        const hasOther = normalized.some(ev => !(ev.area_type_codes && ev.area_type_codes.length))
+        if (hasOther) types.push({ key: 'other', label: '其他' })
+
+        // 为每个事件设置显示用的 label（优先使用收集到的 eventarea type 的第一个映射）
+        normalized.forEach(ev => {
+          if (Array.isArray(ev.area_type_codes) && ev.area_type_codes.length) {
+            const k = String(ev.area_type_codes[0])
+            ev.area_type_label = areaTypeLabelMap[k] || (`类型 ${k}`)
+          } else {
+            // 回退到事件自身的 type_name 或 '其他'
+            ev.area_type_label = ev.type_name || '其他'
+          }
+        })
+
+        this.setData({ events: normalized, types })
+        wx.hideLoading()
+      }).catch(err => {
+        console.error('获取区域详情失败', err)
+        wx.hideLoading()
+      })
     }).catch(err => {
       console.error('获取活动列表失败', err)
       wx.hideLoading()
@@ -205,6 +284,23 @@ Page({
         const rawActive = (r.is_active !== undefined) ? r.is_active : (r.isActive !== undefined ? r.isActive : (r.active !== undefined ? r.active : false))
         const isActive = this.parseBool(rawActive)
         const item = Object.assign({ area_type: areaType, is_active: isActive }, r)
+        // 归一化店铺相关字段，兼容后端可能的命名差异
+        item.owner_name = r.owner_name || r.owner || r.ownerName || r.shop_owner || r.shopOwner || r.keeper || ''
+        item.owner_phone = r.owner_phone || r.ownerPhone || r.contact_phone || r.contact || r.phone || r.mobile || ''
+        // 优先使用 open_time / close_time 字段，并生成显示文本 open - close
+        const openTime = r.open_time || r.openTime || r.open || r.opening_time || r.open_from || ''
+        const closeTime = r.close_time || r.closeTime || r.close || r.closing_time || r.open_to || ''
+        item.open_time = openTime
+        item.close_time = closeTime
+        if (openTime && closeTime) {
+          item.business_hours = openTime + ' - ' + closeTime
+        } else if (openTime) {
+          item.business_hours = openTime
+        } else if (closeTime) {
+          item.business_hours = closeTime
+        } else {
+          item.business_hours = r.business_hours || r.opening_hours || r.hours || r.businessHours || ''
+        }
         areas.push(item)
       })
       this.setData({ modalAreas: areas, modalLoading: false })

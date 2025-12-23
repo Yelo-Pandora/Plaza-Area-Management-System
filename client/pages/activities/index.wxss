@@ -17,16 +17,23 @@
 .type-filters {
 	display: flex;
 	flex-direction: row;
-	flex-wrap: wrap;
+	flex-wrap: nowrap; /* 单行 */
 	padding: 8px 12px;
+	overflow-x: auto; /* 横向可滚动 */
+	-webkit-overflow-scrolling: touch;
+	white-space: nowrap;
 }
+.type-filters::-webkit-scrollbar { display: none; }
 .chip {
+	display: inline-flex;
+	align-items: center;
 	padding: 6px 10px;
 	border-radius: 12px;
 	background: #f3f3f3;
 	margin-right: 8px;
-	margin-bottom: 8px;
+	margin-bottom: 0; /* 单行无需底部间距 */
 	font-size: 12px;
+	white-space: nowrap;
 }
 .chip-selected {
 	background: #007aff;

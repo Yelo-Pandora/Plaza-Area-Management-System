@@ -8,12 +8,12 @@ Page({
 
   onLoad(options) {
     const p = wx.getStorageSync('wxProfile') || null
-    if (p) this.setData({ loggedIn: true, profile: p })
+    this.setData({ loggedIn: !!p, profile: p || {} })
   },
 
   onShow() {
     const p = wx.getStorageSync('wxProfile') || null
-    if (p) this.setData({ loggedIn: true, profile: p })
+    this.setData({ loggedIn: !!p, profile: p || {} })
   },
 
   onAccount(e) { this.setData({ 'login.account': e.detail.value }) },
@@ -52,6 +52,21 @@ Page({
     wx.removeStorageSync('wxProfile')
     this.setData({ loggedIn: false, profile: {}, login: { account: '', password: '' } })
     wx.showToast({ title: '已登出', icon: 'success' })
+  },
+
+  confirmLogout() {
+    const self = this
+    wx.showModal({
+      title: '确认退出登录',
+      content: '确定要退出登录吗？',
+      confirmText: '退出',
+      cancelText: '取消',
+      success(res) {
+        if (res.confirm) {
+          self.doLogout()
+        }
+      }
+    })
   },
 
   openFavorites() { wx.showToast({ title: '我的收藏（占位）', icon: 'none' }) },
