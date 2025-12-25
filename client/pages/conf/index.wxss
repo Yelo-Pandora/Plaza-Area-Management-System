@@ -1,76 +1,63 @@
 /* pages/conf/index.wxss */
 
 .container {
-  padding: 0;
-  margin: 0;
+	padding: 12px;
+	background: #eef6ff;
+	min-height: 100vh;
+	box-sizing: border-box;
 }
 
-/* 将个人信息区固定并紧贴顶部 */
 .section {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  /* pages/conf/index.wxss */
-
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid #eef6ff;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	padding: 12px;
 }
 
-  .container { padding: 0; margin: 0; }
+/* 单行：头像 + 昵称 + 右侧按钮 */
+.row-card { display: flex; flex-direction: row; align-items: center; width: 100%; }
 
-  /* 将个人信息区固定并紧贴顶部 */
-  .section {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    padding-top: env(safe-area-inset-top, 0);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    box-sizing: border-box;
-  }
+.profile-card { width: 100%; }
 
-  .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 999rpx;
-    margin-right: 12px;
-    overflow: hidden;
-  }
+.avatar {
+	width: 44px;
+	height: 44px;
+	border-radius: 999rpx;
+	margin-right: 12px;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid #eef6ff;
+}
 
-  .user-name {
-    font-size: 16px;
-    font-weight: 600;
-    color: #111;
-  }
+.profile-info { flex: 1; display: flex; align-items: center; }
 
-  /* profile-info 占位并水平对齐 */
-  .profile-info { flex: 1; display: flex; align-items: center; }
+.user-name {
+	font-size: 16px;
+	font-weight: 700;
+	color: #111;
+}
 
-  /* 单行容器：头像 + 昵称 + 登出按钮 */
-  .row-card { display: flex; flex-direction: row; align-items: center; width: 100%; }
-  .profile-card { padding-right: 12px; }
+.btn {
+	background: #1890ff;
+	color: #fff;
+	padding: 8px 12px;
+	border-radius: 10px;
+	text-align: center;
+	font-weight: 600;
+	box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+}
+.btn:active { opacity: 0.92; }
 
-  /* 登出按钮紧凑样式并靠右 */
-  .btn.logout { margin-left: auto; padding: 2px 6px; width: 80px; height: 28px; font-size: 13px; }
+/* 退出属于危险操作：保持红色强调 */
+.btn.logout { margin-left: auto; width: 84px; height: 32px; font-size: 13px; background: #ff4d4f; }
 
-  .btn {
-    background: #ff4d4f;
-    color: #fff;
-    padding: 8px 14px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.04);
-    transition: transform 0.08s ease, opacity 0.08s ease;
-  }
-  .btn:active { transform: translateY(1px); opacity: 0.92; }
-
-  .login-box { display: flex; align-items: center; }
-  .login-text { color: #007aff; font-size: 16px; }
-
-  /* 页面其余内容向下避让顶部固定区域（如果将来有内容） */
-  .page-spacer { height: 56px; }
+.login-box {
+	width: 100%;
+	background: #eef6ff;
+	border: 1px solid #1890ff;
+	border-radius: 12px;
+	padding: 14px 12px;
+	box-sizing: border-box;
+}
+.login-text { color: #1890ff; font-size: 16px; font-weight: 600; }
