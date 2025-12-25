@@ -48,17 +48,8 @@ function apiRequest(path, method = 'GET', data = {}, options = {}) {
     })
   })
 
-  // 首先尝试配置的 baseUrl
-  return makeRequest(url).catch(err => {
-    // 如果 baseUrl 包含 '/api'，尝试回退到不带 '/api' 的 base URL（兼容后端不同前缀）
-    if (baseUrl.includes('/api')) {
-      const altBase = baseUrl.replace(/\/api\/?$/, '')
-      const altUrl = altBase + path
-      console.warn('Retrying with alternative base URL:', altUrl)
-      return makeRequest(altUrl)
-    }
-    return Promise.reject(err)
-  })
+  // 始终使用配置的 baseUrl（避免回退到不带 /api 导致接口命中错误前缀）
+  return makeRequest(url)
 }
 
 module.exports = Object.assign({}, module.exports, { baseUrl, apiRequest })

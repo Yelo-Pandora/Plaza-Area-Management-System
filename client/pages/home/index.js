@@ -3,31 +3,112 @@ const util = require('../../utils/util')
 
 Page({
   data: {
-    recommended: []
+    recommended: [],
+    maps: [],
+    selectedMapIndex: 0,
+    // canvas transforms
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0,
+    showRegionModal: false,
+    activeRegion: null
+    ,showZoomPercent: false,
+    zoomPercent: 100
   },
 
   onLoad(options) {
     this.fetchRecommendations()
+    this.fetchMaps()
   },
 
   fetchRecommendations() {
     // 调用后端活动列表接口，取得推荐活动（不传 type 时后端按分类返回）
     util.apiRequest('/search/event/list/').then(res => {
       // 如果返回带 'events' 字段，则取它；否则把所有分类合并为一维数组展示
+      let arr = []
       if (res && res.events) {
-        this.setData({ recommended: res.events })
+        arr = res.events
       } else if (res && typeof res === 'object') {
-        // 合并分类下的活动
-        const arr = []
         Object.keys(res).forEach(k => {
           const list = res[k] || []
           list.forEach(it => arr.push(it))
         })
-        this.setData({ recommended: arr })
       }
+
+      // 固定挑选 6 个作为首页推荐，并规范化字段用于展示
+      const pick = this._pickRandomSubset(arr, 6).map(it => this._normalizeEventForHome(it))
+      this.setData({ recommended: pick })
     }).catch(err => {
       console.error('获取推荐活动失败', err)
     })
+  },
+
+  _pickRandomSubset(arr, n) {
+    if (!Array.isArray(arr) || arr.length === 0) return []
+    const copy = arr.slice()
+    // Fisher-Yates 随机打乱
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const t = copy[i]; copy[i] = copy[j]; copy[j] = t
+    }
+    return copy.slice(0, Math.min(n, copy.length))
+  },
+
+  // ---------- Event normalization for home list (reuse logic from activities) ----------
+  _isOngoing(endVal) {
+    if (!endVal) return false
+    try {
+      let d
+      if (typeof endVal === 'string') {
+        const s = endVal.trim()
+        if (/^\d{4}-\d{2}-\d{2} /.test(s)) {
+          d = new Date(s.replace(' ', 'T'))
+        } else {
+          d = new Date(s)
+        }
+      } else {
+        d = new Date(endVal)
+      }
+      if (isNaN(d.getTime())) return false
+      return Date.now() <= d.getTime()
+    } catch (e) {
+      return false
+    }
+  },
+
+  _formatDateStr(s) {
+    if (!s) return ''
+    try {
+      if (typeof s === 'string' && s.length >= 16 && s[4] === '-') return s.substr(0,16)
+      const d = new Date(s)
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear()
+        const m = (d.getMonth()+1).toString().padStart(2,'0')
+        const day = d.getDate().toString().padStart(2,'0')
+        const hh = d.getHours().toString().padStart(2,'0')
+        const mm = d.getMinutes().toString().padStart(2,'0')
+        return `${y}-${m}-${day} ${hh}:${mm}`
+      }
+    } catch (e) {}
+    return s
+  },
+
+  _normalizeEventForHome(raw) {
+    if (!raw || typeof raw !== 'object') return raw
+    const ev = Object.assign({}, raw)
+    ev.id = ev.id || ev.event_id || ev.pk || ev.uuid || ev._id
+    ev.name = ev.name || ev.event_name || ev.title || ev.eventTitle || '活动'
+    ev.description = ev.description || ev.desc || ev.detail || ev.description_text || ev.summary || ''
+    ev.type_name = ev.type_name || ev.type || ev.category || ev.typeName || ''
+    ev.start = ev.start || ev.start_date || ev.start_time || ev.date || ev.begin || ev.startDate || ev.begin_time
+    ev.end = ev.end || ev.end_date || ev.end_time || ev.finish || ev.endDate || ev.finish_time
+    ev._raw_end = ev.end
+    ev.is_ongoing = this._isOngoing(ev._raw_end)
+    try { ev.start = this._formatDateStr(ev.start) } catch(e){}
+    try { ev.end = this._formatDateStr(ev.end) } catch(e){}
+    // image field compatibility
+    ev.image_url = ev.image_url || ev.image || ev.imageUrl || ev.img || ev.thumbnail || ''
+    return ev
   },
 
   openFullMap() {
@@ -45,6 +126,482 @@ Page({
     if (!id) return
     // 暂跳转到活动页（可实现活动详情页）
     wx.navigateTo({ url: `/pages/activities/index?event_id=${id}` })
-  }
+  },
+
+  // ========== Map / Canvas logic ==========
+  fetchMaps() {
+    util.apiRequest('/maps/').then(res => {
+      // res expected to be array of maps
+      const maps = (res || []).map(m => ({ id: m.id, label: `${m.building_name || ''} 楼层 ${m.floor_number}`, raw: m }))
+      this.setData({ maps })
+      if (maps.length) this.loadMapDetail(0)
+    }).catch(err => console.error('加载地图列表失败', err))
+  },
+
+  onMapChange(e) {
+    const idx = parseInt(e.detail.value, 10) || 0
+    this.setData({ selectedMapIndex: idx, scale: 1, offsetX: 0, offsetY: 0, activeRegion: null })
+    this.loadMapDetail(idx)
+  },
+
+  loadMapDetail(index) {
+    const map = this.data.maps[index]
+    if (!map) return
+    util.apiRequest(`/maps/${map.id}/`).then(res => {
+      // replace raw with detail
+      const maps = this.data.maps.slice()
+      maps[index].raw = res
+      this.setData({ maps })
+      // draw
+      setTimeout(() => this.drawMap(), 50)
+      // fetch facilities for this map/floor
+      this.fetchFacilitiesForMap(map.id)
+    }).catch(err => console.error('加载地图详情失败', err))
+  },
+
+  // fetch facilities for a given map id from backend
+  fetchFacilitiesForMap(mapId) {
+    if (!mapId) return
+    util.apiRequest(`/maps/${mapId}/facilities/`).then(res => {
+      // expect array or {results: []}
+      const list = Array.isArray(res) ? res : (res && res.results) ? res.results : []
+      // attach to corresponding map.raw
+      const maps = this.data.maps.slice()
+      const idx = maps.findIndex(m => m.id === mapId)
+      if (idx >= 0) {
+        maps[idx].raw = Object.assign({}, maps[idx].raw || {}, { facilities: list })
+        this.setData({ maps }, () => this.drawMap())
+      }
+    }).catch(err => {
+      console.warn('加载设施数据失败', err)
+    })
+  },
+
+  drawMap() {
+    const idx = this.data.selectedMapIndex
+    const map = this.data.maps[idx]
+    if (!map || !map.raw) return
+
+    const detail = map.raw.detail_geojson
+    const ctx = wx.createCanvasContext('mapCanvas', this)
+    // canvas size: get system info to compute pixel ratio
+    const query = wx.createSelectorQuery().in(this)
+    query.select('.map-canvas').boundingClientRect(rect => {
+      // cache rect for touch handlers
+      this._canvasRect = rect
+      const w = rect.width, h = rect.height
+      // clear
+      ctx.clearRect(0, 0, w, h)
+
+      if (!detail) {
+        ctx.setFillStyle('#f5f5f5')
+        ctx.fillRect(0,0,w,h)
+        ctx.draw()
+        return
+      }
+
+      // collect polygons from detail (GeoJSON)
+      const polygons = []
+      if (detail.type === 'GeometryCollection' && Array.isArray(detail.geometries)) {
+        detail.geometries.forEach(g => {
+          if (g.type === 'Polygon') polygons.push(g.coordinates)
+          if (g.type === 'MultiPolygon') g.coordinates.forEach(c => polygons.push(c))
+        })
+      } else if (detail.type === 'Polygon') polygons.push(detail.coordinates)
+
+      // compute bbox
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      polygons.forEach(poly => {
+        poly.forEach(ring => ring.forEach(pt => {
+          const x = pt[0], y = pt[1]
+          if (x < minX) minX = x
+          if (y < minY) minY = y
+          if (x > maxX) maxX = x
+          if (y > maxY) maxY = y
+        }))
+      })
+      if (!isFinite(minX)) {
+        ctx.draw()
+        return
+      }
+
+      const mapW = maxX - minX || 1
+      const mapH = maxY - minY || 1
+      // compute scale to fit
+      const baseScale = Math.min(w / mapW, h / mapH)
+      const s = baseScale * this.data.scale
+
+      // helper to convert geo (x,y) to canvas
+      const toCanvas = (x,y) => {
+        // translate so minX maps to 0, minY maps to 0, then apply scale, then center
+        const cx = (x - minX) * s + this.data.offsetX + (w - mapW * s)/2
+        const cy = (y - minY) * s + this.data.offsetY + (h - mapH * s)/2
+        return [cx, cy]
+      }
+
+      // draw base shell (first polygon as outer)
+      ctx.setStrokeStyle('#333')
+      ctx.setLineWidth(1)
+      ctx.setFillStyle('#fff')
+      polygons.forEach((poly, pi) => {
+        // poly: array of rings; first is outer
+        poly.forEach((ring, ri) => {
+          ring.forEach((pt, i) => {
+            const [cx, cy] = toCanvas(pt[0], pt[1])
+            if (i === 0) ctx.moveTo(cx, cy)
+            else ctx.lineTo(cx, cy)
+          })
+        })
+        ctx.closePath()
+        ctx.fill()
+        ctx.stroke()
+      })
+
+      // draw regions (stores / other / events)
+      const regions = []
+      const pushGeo = (list, color, kind) => {
+        (list || []).forEach(it => {
+          if (!it.geometry) return
+          try { const g = it.geometry; if (g.type === 'Polygon') regions.push({coords: g.coordinates, meta: it, color})
+            else if (g.type === 'MultiPolygon') g.coordinates.forEach(c => regions.push({coords: c, meta: it, color}))
+          } catch(e){}
+        })
+      }
+      // 给不同来源的区域打上 kind，便于点击后正确分类（避免活动区域被当成其他区域）
+      const pushRegion = (list, color, kind) => {
+        (list || []).forEach(it => {
+          if (!it.geometry) return
+          try {
+            const g = it.geometry
+            if (g.type === 'Polygon') regions.push({ coords: g.coordinates, meta: it, color, kind })
+            else if (g.type === 'MultiPolygon') g.coordinates.forEach(c => regions.push({ coords: c, meta: it, color, kind }))
+          } catch (e) {}
+        })
+      }
+      pushRegion(map.raw.stores, 'rgba(0,120,212,0.3)', 'storearea')
+      pushRegion(map.raw.other_areas, 'rgba(120,200,80,0.3)', 'otherarea')
+      pushRegion(map.raw.events, 'rgba(220,80,80,0.3)', 'eventarea')
+
+      regions.forEach(r => {
+        ctx.setFillStyle(r.color)
+        ctx.beginPath()
+        r.coords.forEach(ring => ring.forEach((pt, i) => {
+          const [cx, cy] = toCanvas(pt[0], pt[1])
+          if (i===0) ctx.moveTo(cx, cy)
+          else ctx.lineTo(cx, cy)
+        }))
+        ctx.closePath()
+        ctx.fill()
+      })
+
+      // draw facility markers (points)
+      const facilities = (map.raw.facilities || []).filter(f => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'))
+      ctx.setFillStyle('rgba(255,120,40,0.95)')
+      facilities.forEach(f => {
+        try {
+          const coords = f.geometry.type === 'Point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
+          if (!coords) return
+          const [fx, fy] = coords
+          const [cx, cy] = toCanvas(fx, fy)
+          // further reduced marker size: base multiplier lowered to 2, clamp smaller
+          const rMark = Math.max(1, Math.min(4, Math.round(2 * (baseScale * this.data.scale))))
+          ctx.beginPath()
+          ctx.arc(cx, cy, rMark, 0, Math.PI * 2)
+          ctx.fill()
+          // optional white center
+          ctx.setFillStyle('#fff')
+          ctx.beginPath()
+          ctx.arc(cx, cy, Math.max(1, Math.round(rMark/2)), 0, Math.PI * 2)
+          ctx.fill()
+          ctx.setFillStyle('rgba(255,120,40,0.95)')
+        } catch (e) {}
+      })
+
+      // save regions and facilities for hit-testing
+      this._drawn = { polygons, regions, minX, minY, mapW, mapH, baseScale, canvasW: w, canvasH: h, facilities }
+      ctx.draw()
+    }).exec()
+  },
+
+  // touch handlers for pan
+  onTouchStart(e) {
+    const touches = e.touches || []
+    if (touches.length >= 2) {
+      // pinch start
+      const r = this._canvasRect
+      const p1 = touches[0]
+      const p2 = touches[1]
+      const x1 = p1.clientX - (r ? r.left : 0)
+      const y1 = p1.clientY - (r ? r.top : 0)
+      const x2 = p2.clientX - (r ? r.left : 0)
+      const y2 = p2.clientY - (r ? r.top : 0)
+      const distance = Math.hypot(x2 - x1, y2 - y1)
+      const centerClient = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }
+      // compute geo center using current transform
+      const d = this._drawn
+      if (d) {
+        const s = d.baseScale * this.data.scale
+        const centerPadX = (r.width - d.mapW * s) / 2
+        const centerPadY = (r.height - d.mapH * s) / 2
+        const geoX = (centerClient.x - this.data.offsetX - centerPadX) / s + d.minX
+        const geoY = (centerClient.y - this.data.offsetY - centerPadY) / s + d.minY
+        this._pinchStart = { distance, centerClient, baseScaleValue: this.data.scale, geoCenter: { x: geoX, y: geoY } }
+      }
+    } else if (touches.length === 1) {
+      const t = touches[0]
+      this._touchStart = { x: t.clientX, y: t.clientY, startOffsetX: this.data.offsetX, startOffsetY: this.data.offsetY }
+    }
+  },
+  onTouchMove(e) {
+    const touches = e.touches || []
+    // pinch handling
+    if (touches.length >= 2 && this._pinchStart && this._canvasRect && this._drawn) {
+      const r = this._canvasRect
+      const p1 = touches[0]
+      const p2 = touches[1]
+      const x1 = p1.clientX - r.left
+      const y1 = p1.clientY - r.top
+      const x2 = p2.clientX - r.left
+      const y2 = p2.clientY - r.top
+      const distance = Math.hypot(x2 - x1, y2 - y1)
+      const scaleFactor = distance / this._pinchStart.distance
+      let newScale = this._pinchStart.baseScaleValue * scaleFactor
+      // clamp scale
+      newScale = Math.max(0.2, Math.min(newScale, 6))
+
+      // compute new offsets so geoCenter stays under same client center
+      const d = this._drawn
+      const sPrime = d.baseScale * newScale
+      const centerClient = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }
+      const centerPadX = (r.width - d.mapW * sPrime) / 2
+      const centerPadY = (r.height - d.mapH * sPrime) / 2
+
+      const geo = this._pinchStart.geoCenter
+      const offsetX = centerClient.x - (geo.x - d.minX) * sPrime - centerPadX
+      const offsetY = centerClient.y - (geo.y - d.minY) * sPrime - centerPadY
+
+      this.setData({ scale: newScale, offsetX, offsetY }, () => {
+        this.drawMap()
+        this._showZoomPercent()
+      })
+      return
+    }
+
+    // single-touch pan
+    const t = touches[0]
+    if (!t || !this._touchStart) return
+    const dx = t.clientX - this._touchStart.x
+    const dy = t.clientY - this._touchStart.y
+    this.setData({ offsetX: this._touchStart.startOffsetX + dx, offsetY: this._touchStart.startOffsetY + dy }, () => this.drawMap())
+  },
+  onTouchEnd(e) {
+    // clear touch/pinch state
+    this._touchStart = null
+    this._pinchStart = null
+  },
+
+  // zoom buttons
+  zoomIn() {
+    const newScale = Math.min(this.data.scale * 1.2, 6)
+    this.setData({ scale: newScale }, () => {
+      this.drawMap()
+      this._showZoomPercent()
+    })
+  },
+  zoomOut() {
+    const newScale = Math.max(this.data.scale / 1.2, 0.2)
+    this.setData({ scale: newScale }, () => {
+      this.drawMap()
+      this._showZoomPercent()
+    })
+  },
+
+  _showZoomPercent() {
+    try { if (this._zoomTimer) clearTimeout(this._zoomTimer) } catch (e) {}
+    const pct = Math.round((this.data.scale || 1) * 100)
+    this.setData({ showZoomPercent: true, zoomPercent: pct })
+    this._zoomTimer = setTimeout(() => {
+      this.setData({ showZoomPercent: false })
+      this._zoomTimer = null
+    }, 800)
+  },
+
+  // tap to detect region
+  onCanvasTap(e) {
+    // compute client coords
+    const clientX = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX) || (e.touches && e.touches[0] && e.touches[0].clientX) || e.detail.x
+    const clientY = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY) || (e.touches && e.touches[0] && e.touches[0].clientY) || e.detail.y
+    if (!this._drawn) return
+
+    // get canvas position to convert client coords -> canvas local coords
+    const query = wx.createSelectorQuery().in(this)
+    query.select('.map-canvas').boundingClientRect(rect => {
+      if (!rect) return
+      const relX = clientX - rect.left
+      const relY = clientY - rect.top
+
+      const d = this._drawn
+      const { minX, minY, baseScale, mapW, mapH } = d
+      const s = baseScale * this.data.scale
+      const gx = (relX - this.data.offsetX - (rect.width - mapW * s)/2)/s + minX
+      const gy = (relY - this.data.offsetY - (rect.height - mapH * s)/2)/s + minY
+
+      // check facility points first (prefer tapping marker)
+      let hit = null
+      if (d.facilities && d.facilities.length) {
+        const sVal = d.baseScale * this.data.scale
+        const padX = (rect.width - d.mapW * sVal)/2
+        const padY = (rect.height - d.mapH * sVal)/2
+        for (let i=0;i<d.facilities.length;i++){
+          const f = d.facilities[i]
+          try {
+            const coords = f.geometry.type === 'Point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
+            if (!coords) continue
+            const fx = (coords[0] - d.minX) * sVal + this.data.offsetX + padX
+            const fy = (coords[1] - d.minY) * sVal + this.data.offsetY + padY
+            const dist = Math.hypot(relX - fx, relY - fy)
+            if (dist <= 12) { hit = { meta: f, type: 'facility' }; break }
+          } catch(e){}
+        }
+      }
+
+      // then check polygon regions
+      if (!hit) {
+        hit = d.regions.find(r => {
+          const ring = r.coords[0]
+          return ring && this._pointInPoly([gx, gy], ring)
+        })
+      }
+
+      if (hit) {
+        // if facility marker, show meta; if polygon region, include its kind for correct classification
+        let meta = hit.meta || (hit.type === 'facility' ? hit.meta : null)
+        if (hit.kind && meta && typeof meta === 'object') {
+          // 不直接污染原对象，浅拷贝并带上 __kind
+          meta = Object.assign({}, meta, { __kind: hit.kind })
+        }
+        const norm = this._normalizeRegionForModal(meta)
+        this.setData({ showRegionModal: true, activeRegion: norm })
+        // 若规范化后缺少组织者/联系方式，尝试通过 search 模块的详情接口获取更详细的区域信息
+        try {
+          const areaId = (norm && norm._raw && (norm._raw.id || norm._raw.pk)) || (norm && (norm.id || norm.pk))
+          // 设施弹窗只需展示类型：不要再发起详情请求，避免合并结果覆盖 is_facility 导致走回退分支
+          if (areaId && !norm.is_facility && !norm.organizer_name && !norm.organizer_phone) {
+            // 根据类型选择合适的 search 接口；活动区域不要回退到 otherarea，避免覆盖分类
+            const tryPaths = []
+            if (norm.is_event) {
+              tryPaths.push(`/search/eventarea/${areaId}/`)
+            } else if (norm.is_shop) {
+              tryPaths.push(`/search/storearea/${areaId}/`)
+            } else {
+              tryPaths.push(`/search/otherarea/${areaId}/`)
+            }
+
+            const tryFetch = (i) => {
+              if (i >= tryPaths.length) return Promise.reject(new Error('no search endpoint succeeded'))
+              const p = tryPaths[i]
+              return util.apiRequest(p).then(detail => ({ detail, path: p })).catch(err => tryFetch(i+1))
+            }
+
+            tryFetch(0).then(({ detail, path }) => {
+              try {
+                const more = this._normalizeRegionForModal(detail)
+                // 合并时保留点击命中的分类信息，避免被返回数据覆盖导致弹窗分支错误
+                const merged = Object.assign({}, norm, more)
+                merged.is_facility = !!(norm.is_facility || more.is_facility)
+                merged.is_shop = !!(norm.is_shop || more.is_shop)
+                merged.is_event = !!(norm.is_event || more.is_event)
+                merged.area_type = merged.area_type || norm.area_type || more.area_type
+                const mergedRaw = Object.assign({}, (norm && norm._raw) ? norm._raw : {}, (more && more._raw) ? more._raw : {})
+                if (norm && norm._raw && norm._raw.__kind && !mergedRaw.__kind) mergedRaw.__kind = norm._raw.__kind
+                merged._raw = mergedRaw
+                this.setData({ activeRegion: merged })
+              } catch (e) { console.warn('normalize fetched area failed', e) }
+            }).catch(err => {
+              try { console.warn('fetch area detail via search endpoints failed', err) } catch(e){}
+            })
+          }
+        } catch (e) { console.warn('area detail fetch prepare failed', e) }
+      }
+    }).exec()
+  },
+
+  // normalize various backend shapes into common fields used by modal
+  _normalizeRegionForModal(raw) {
+    if (!raw || typeof raw !== 'object') return raw
+    const src = raw.properties || raw.attributes || raw.store || raw
+    const pick = (keys) => {
+      for (let k of keys) {
+        if (raw[k] !== undefined) return raw[k]
+        if (src && src[k] !== undefined) return src[k]
+      }
+      return undefined
+    }
+    const out = {}
+    out.store_name = pick(['store_name','storeName','shop_name','name','title'])
+    out.name = out.store_name || pick(['name','title'])
+    out.phone = pick(['phone','phone_number','contact_phone','tel','contact'])
+    out.open_time = pick(['open_time','open','business_hours','hours','opening_time'])
+    out.close_time = pick(['close_time','close','closing_time'])
+    out.description = pick(['description','desc','detail','summary','info'])
+    out.type = pick(['type','facility_type','category'])
+    out.facility_type = out.type
+    out.logo_url = pick(['logo_url','image_url','image','logo','thumbnail'])
+    out.image_url = out.logo_url
+    out.organizer = pick(['organizer','organizer_name','organizerName','owner','owner_name','ownerName','contact_person','contact_name','manager'])
+    out.organizer_name = pick(['organizer_name','organizer','organizerName','owner','owner_name','ownerName','manager','contact_person','contact_name'])
+    out.organizer_phone = pick(['organizer_phone','organizer_tel','organizer_phone_number','organizer_contact','organizer_contact_phone','organizer_mobile','organizer_mobile_phone','phone','tel','contact'])
+    out.contact_person = out.organizer || out.organizer_name
+    // area_type/area_type_codes detection
+    out.area_type = pick(['area_type','areaType','area_type_code','area_type_codes','facility_type','type'])
+    // owner fields for store areas
+    out.owner_name = pick(['owner_name','owner','shop_owner','manager_name'])
+    out.owner_phone = pick(['owner_phone','owner_tel','owner_phone_number','owner_contact'])
+    // determine if this is an event area — prefer explicit kind from hit-testing
+    const kind = raw.__kind || (src && src.__kind)
+    if (kind === 'eventarea') {
+      out.is_event = true
+      if (!out.area_type) out.area_type = 'eventarea'
+    }
+
+    // determine if this is an event area — require stronger indicators to avoid false positives for facilities
+    const explicitEvent = raw.event_id || pick(['is_event','event','activity','activity_id','event_id'])
+    const typeLooksLikeEvent = (out.type && /event|activity|eventarea/i.test(String(out.type))) || (out.area_type && /event|activity|eventarea/i.test(String(out.area_type)))
+    // also consider area_type codes that equal 'eventarea' or similar
+    const areaTypeRaw = (src && (src.area_type || src.areaType || src.area_type_code || src.area_type_codes)) || raw.area_type || raw.areaType
+    const areaTypeLooksEvent = areaTypeRaw && /event|activity|eventarea/i.test(String(areaTypeRaw))
+    const hasOrganizerAndTime = !!(out.organizer_name && pick(['start','begin','start_time','date','start_time']))
+    out.is_event = !!(out.is_event || explicitEvent || typeLooksLikeEvent || areaTypeLooksEvent || hasOrganizerAndTime || raw.is_event)
+    // mark facility (point) explicitly to distinguish from polygon areas
+    // facilities may be Point or MultiPoint (we draw both)
+    const rawGeoType = raw && raw.geometry && raw.geometry.type
+    const srcGeoType = src && src.geometry && src.geometry.type
+    out.is_facility = (rawGeoType === 'Point' || rawGeoType === 'MultiPoint' || srcGeoType === 'Point' || srcGeoType === 'MultiPoint')
+    out.is_shop = !!(out.store_name || out.type === 'store' || out.type === 'shop' || raw.is_shop)
+    // include original object for any extra fields
+    out._raw = raw
+    return out
+  },
+
+  _pointInPoly(pt, ring) {
+    const x = pt[0], y = pt[1]
+    let inside = false
+    for (let i=0,j=ring.length-1;i<ring.length;j=i++){
+      const xi = ring[i][0], yi = ring[i][1]
+      const xj = ring[j][0], yj = ring[j][1]
+      const intersect = ((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)
+      if (intersect) inside = !inside
+    }
+    return inside
+  },
+
+  // modal close
+  closeRegionModal() { this.setData({ showRegionModal: false, activeRegion: null }) },
+
+  // 跳转到完整活动页
+  openActivityList() {
+    // activities 在 tabBar 中，使用 switchTab
+    wx.switchTab({ url: '/pages/activities/index' })
+  },
 
 })
