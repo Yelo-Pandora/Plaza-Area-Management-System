@@ -154,3 +154,12 @@ export function removeEventareaFromEvent(eventId, eventareaId) {
   })
 }
 
+export function updateEditorFacilityLocation(id, locationGeojson) {
+  return request(`api/editor/facility/${id}/`, {
+    method: 'PATCH',
+    body: {
+      // 后端 Facility 模型使用的是 location 字段
+      location: typeof locationGeojson === 'string' ? locationGeojson : JSON.stringify(locationGeojson)
+    }
+  })
+}

@@ -31,11 +31,10 @@ export function useCanvasLogic(stageContainerRef) {
   } = useMapEditorStore()
 
   let stage = null
-  let layer = null       // 背景层 (用于点击空白处取消选中)
-  let baseLayer = null   // 新增：底图层 (建筑轮廓、墙体、镂空)
-  let shapesLayer = null // 交互层 (店铺、活动区、设施)
+  let layer = null       // 背景层
+  let baseLayer = null   // 底图层
+  let shapesLayer = null // 业务层
 
-  // 类型颜色配置
   const typeColors = {
     storearea: '#2563eb',
     eventarea: '#16a34a',
@@ -43,16 +42,54 @@ export function useCanvasLogic(stageContainerRef) {
     facility: '#8b5cf6',
   }
 
+  // --- 辅助：获取区域名称 ---
+  const getAreaName = (area, type) => {
+    if (type === 'storearea') return area.store_name || '未命名店铺'
+
+    // 修改：Eventarea 显示类型名称
+    if (type === 'eventarea') {
+      const types = { 0: '普通活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
+      // 注意：area.type 可能是 0，所以不能简单的 ||
+      return types[area.type] !== undefined ? types[area.type] : '活动区域'
+    }
+
+    // 修改：Otherarea 显示类型名称
+    if (type === 'otherarea') {
+      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他' }
+      return types[area.type] !== undefined ? types[area.type] : '其他区域'
+    }
+
+    if (type === 'facility') return area.description || '设施'
+    return ''
+  }
+
+  // --- 辅助：计算多边形包围盒 ---
+  const getBoundingBox = (points) => {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    for (let i = 0; i < points.length; i += 2) {
+      const x = points[i]
+      const y = points[i+1]
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
+    }
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      centerX: minX + (maxX - minX) / 2,
+      centerY: minY + (maxY - minY) / 2
+    }
+  }
+
   // --- 2. 自动适配视图 ---
   const autoFitView = () => {
-    // 优先适配底图，如果没有底图则适配所有内容
     const targetLayer = (baseLayer && baseLayer.hasChildren()) ? baseLayer : shapesLayer
-
     if (!stage || !targetLayer) return
 
-    // 获取内容的边界框
     const box = targetLayer.getClientRect({ skipTransform: true })
-
     if (box.width === 0 || box.height === 0) {
       stage.position({ x: 0, y: 0 })
       stage.scale({ x: 1, y: 1 })
@@ -63,12 +100,10 @@ export function useCanvasLogic(stageContainerRef) {
     const stageWidth = stage.width()
     const stageHeight = stage.height()
 
-    // 计算缩放比例
     const scaleX = (stageWidth - padding * 2) / box.width
     const scaleY = (stageHeight - padding * 2) / box.height
     const scale = Math.min(scaleX, scaleY)
 
-    // 计算居中位置
     const centerX = stageWidth / 2 - (box.x + box.width / 2) * scale
     const centerY = stageHeight / 2 - (box.y + box.height / 2) * scale
 
@@ -79,21 +114,15 @@ export function useCanvasLogic(stageContainerRef) {
 
   // --- 3. 绘制逻辑 ---
 
-  // 新增：绘制底图 (建筑轮廓)
   const drawBaseMap = () => {
     if (!baseLayer || !currentMap.value || !currentMap.value.detail_geojson) return
-
     baseLayer.destroyChildren()
 
     const geojson = currentMap.value.detail_geojson
-    // 后端返回的是 GeometryCollection
-    // 约定：索引 0 是外轮廓 (地板)，索引 1+ 是内部镂空 (中庭等)
-
     let geometries = []
     if (geojson.type === 'GeometryCollection') {
       geometries = geojson.geometries
     } else if (geojson.type === 'Polygon' || geojson.type === 'MultiPolygon') {
-      // 兼容可能只返回单个 Polygon 的情况
       geometries = [geojson]
     }
 
@@ -107,94 +136,133 @@ export function useCanvasLogic(stageContainerRef) {
 
       if (points.length < 4) return
 
-      // 样式区分：索引0是地板，其他是镂空
       const isFloor = index === 0
-
       const poly = new Konva.Line({
         points: points,
         closed: true,
-        // 地板用浅灰，镂空用背景色覆盖(模拟挖空)
         fill: isFloor ? '#e2e8f0' : '#f8fafc',
-        stroke: '#94a3b8', // 边框颜色
-        strokeWidth: 2 / (stage ? stage.scaleX() : 1), // 这里的边框可以稍微粗一点
-        listening: false, // 底图不响应点击事件，避免干扰上方区域的操作
+        stroke: '#94a3b8',
+        strokeWidth: 2 / (stage ? stage.scaleX() : 1),
+        listening: false,
         id: `base-${index}`
       })
-
       baseLayer.add(poly)
     })
-
     baseLayer.batchDraw()
   }
 
-  // 绘制单个多边形区域 (店铺、活动区等)
+  // 绘制多边形区域 (带文字)
   const drawPolygon = (area, type) => {
     if (!area.geometry || !area.geometry.coordinates) return
 
-    let points = []
+    let absolutePoints = []
     if (area.geometry.type === 'Polygon') {
-      points = area.geometry.coordinates[0].flat()
+      absolutePoints = area.geometry.coordinates[0].flat()
     } else if (area.geometry.type === 'MultiPolygon') {
-      points = area.geometry.coordinates[0][0].flat()
+      absolutePoints = area.geometry.coordinates[0][0].flat()
     }
 
-    if (points.length < 4) return
+    if (absolutePoints.length < 4) return
 
     const color = typeColors[type]
+    const isSelected = selectedFeature.value?.id === area.id && selectedType.value === type
 
-    const poly = new Konva.Line({
-      points: points,
-      closed: true,
-      fill: `${color}33`,
-      stroke: color,
-      strokeWidth: 1 / (stage ? stage.scaleX() : 1),
+    // 1. 计算包围盒和中心点
+    const bounds = getBoundingBox(absolutePoints)
+
+    // 2. 创建 Group，位置设为几何中心
+    const group = new Konva.Group({
+      x: bounds.centerX,
+      y: bounds.centerY,
       draggable: true,
-      name: 'feature-shape',
-      id: `${type}-${area.id}`,
-      hitStrokeWidth: 10
+      id: `${type}-${area.id}`
     })
 
-    if (selectedFeature.value?.id === area.id && selectedType.value === type) {
-      poly.strokeWidth(3 / (stage ? stage.scaleX() : 1))
-      poly.fill(`${color}66`)
-      poly.shadowColor('black')
-      poly.shadowBlur(10)
-      poly.shadowOpacity(0.3)
-      poly.moveToTop()
+    // 3. 将绝对坐标转换为相对于 Group 中心 (0,0) 的相对坐标
+    const relativePoints = []
+    for (let i = 0; i < absolutePoints.length; i += 2) {
+      relativePoints.push(absolutePoints[i] - bounds.centerX)
+      relativePoints.push(absolutePoints[i+1] - bounds.centerY)
     }
 
-    poly.on('click tap', (e) => {
+    // 4. 创建图形 (Polygon)
+    const poly = new Konva.Line({
+      points: relativePoints,
+      closed: true,
+      fill: isSelected ? `${color}66` : `${color}33`,
+      stroke: color,
+      strokeWidth: (isSelected ? 3 : 1) / (stage ? stage.scaleX() : 1),
+      shadowColor: 'black',
+      shadowBlur: isSelected ? 10 : 0,
+      shadowOpacity: 0.3,
+      hitStrokeWidth: 10,
+      name: 'feature-shape'
+    })
+
+    // 5. 创建文字 (Text)
+    const areaName = getAreaName(area, type)
+
+    // 根据包围盒大小计算字体，确保能放入框内
+    const fontSize = Math.min(bounds.width, bounds.height) / 4
+
+    const text = new Konva.Text({
+      x: -bounds.width / 2,
+      y: -bounds.height / 2,
+      width: bounds.width,
+      height: bounds.height,
+      text: areaName,
+      fontSize: fontSize,
+      fontFamily: 'sans-serif',
+      fill: '#1e293b',
+      align: 'center',
+      verticalAlign: 'middle',
+      ellipsis: true,
+      wrap: 'none',
+      listening: false,
+    })
+
+    text.scale({ x: 1, y: 1 })
+
+    // 6. 组装
+    group.add(poly)
+    group.add(text)
+
+    // 7. 事件绑定
+    group.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature(type, area)
     })
 
-    poly.on('dragend', function() {
-      handleGeometryUpdate(type, area, this)
+    group.on('dragend', function() {
+      handleGroupDragEnd(type, area, this, relativePoints)
     })
 
-    poly.on('mouseenter', () => {
+    group.on('mouseenter', () => {
       stage.container().style.cursor = 'pointer'
-      if (selectedFeature.value?.id !== area.id) {
+      if (!isSelected) {
         poly.fill(`${color}55`)
         shapesLayer.batchDraw()
       }
     })
 
-    poly.on('mouseleave', () => {
+    group.on('mouseleave', () => {
       stage.container().style.cursor = 'default'
-      if (selectedFeature.value?.id !== area.id) {
+      if (!isSelected) {
         poly.fill(`${color}33`)
         shapesLayer.batchDraw()
       }
     })
 
-    shapesLayer.add(poly)
+    if (isSelected) {
+      group.moveToTop()
+    }
+
+    shapesLayer.add(group)
   }
 
-  // 绘制设施
+  // 绘制设施 (点/圆)
   const drawFacility = (facility) => {
     let x = 0, y = 0
-
     if (facility.location && typeof facility.location.x === 'number') {
       x = facility.location.x
       y = facility.location.y
@@ -207,38 +275,42 @@ export function useCanvasLogic(stageContainerRef) {
 
     const color = typeColors['facility']
     const radius = 5 / (stage ? stage.scaleX() : 1)
+    const isSelected = selectedFeature.value?.id === facility.id && selectedType.value === 'facility'
 
-    const circle = new Konva.Circle({
-      x, y,
-      radius: Math.max(radius, 2),
-      fill: color,
-      stroke: 'white',
-      strokeWidth: 1,
+    const group = new Konva.Group({
+      x: x,
+      y: y,
       draggable: true,
       id: `facility-${facility.id}`
     })
 
-    if (selectedFeature.value?.id === facility.id && selectedType.value === 'facility') {
-      circle.stroke('yellow')
-      circle.strokeWidth(2)
-      circle.shadowBlur(5)
-    }
+    const circle = new Konva.Circle({
+      x: 0,
+      y: 0,
+      radius: Math.max(radius, 2),
+      fill: color,
+      stroke: isSelected ? 'yellow' : 'white',
+      strokeWidth: isSelected ? 2 : 1,
+      shadowBlur: isSelected ? 5 : 0
+    })
 
-    circle.on('click tap', (e) => {
+    // 设施文字已移除
+
+    group.add(circle)
+
+    group.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature('facility', facility)
     })
 
-    circle.on('dragend', function() {
-      // 设施位置更新逻辑: 目前仅更新 UI 状态
+    group.on('dragend', function() {
       facility.location = { x: this.x(), y: this.y() }
-      // 如果需要调用后端 API，需在 editor 模块补充 updateFacilityLocation 接口
+      console.log(`[Save] 设施移动到: ${this.x()}, ${this.y()}`)
     })
 
-    shapesLayer.add(circle)
+    shapesLayer.add(group)
   }
 
-  // 绘制所有图层
   const drawAllFeatures = () => {
     if (!shapesLayer) return
     shapesLayer.destroyChildren()
@@ -251,17 +323,22 @@ export function useCanvasLogic(stageContainerRef) {
     shapesLayer.batchDraw()
   }
 
-  // --- 4. 数据保存逻辑 ---
-  const handleGeometryUpdate = async (type, area, shapeNode) => {
-    const points = shapeNode.points()
-    const dx = shapeNode.x()
-    const dy = shapeNode.y()
+  // --- 4. 数据保存逻辑 (适配 Group 模式) ---
+  const handleGroupDragEnd = async (type, area, groupNode, relativePoints) => {
+    // 获取 Group 移动后的新中心点绝对坐标
+    const centerX = groupNode.x()
+    const centerY = groupNode.y()
 
+    // 还原回绝对坐标数组
     const newCoords = []
-    for (let i = 0; i < points.length; i += 2) {
-      newCoords.push([points[i] + dx, points[i+1] + dy])
+    for (let i = 0; i < relativePoints.length; i += 2) {
+      newCoords.push([
+        relativePoints[i] + centerX,
+        relativePoints[i+1] + centerY
+      ])
     }
 
+    // 确保闭合
     if (newCoords.length > 0) {
       const start = newCoords[0]
       const end = newCoords[newCoords.length - 1]
@@ -270,24 +347,19 @@ export function useCanvasLogic(stageContainerRef) {
       }
     }
 
+    // 更新本地数据引用
     area.geometry = { type: 'Polygon', coordinates: [newCoords] }
-
-    shapeNode.position({ x: 0, y: 0 })
-    shapeNode.points(newCoords.flat())
-    shapesLayer.batchDraw()
 
     console.log(`[Save] 更新 ${type} ID:${area.id} 几何数据`)
 
     // 调用 API 保存
     try {
       const apiMap = {
-        storearea: managementAPI.updateManagementStorearea, // 注意：后端需确保 management 模块允许更新 shape，或者切换到 editor 模块的 API
+        storearea: managementAPI.updateManagementStorearea,
         eventarea: managementAPI.updateManagementEventarea,
         otherarea: managementAPI.updateManagementOtherarea
       }
-      // 根据你提供的 editor.js，应该使用 editor 模块的 API 来更新 shape
-      // 这里如果 managementAPI 不允许更新 shape，请引入 editorAPI 并替换
-      // 示例: editorAPI.updateEditorStoreareaShape(area.id, area.geometry)
+      // 实际项目中需替换为 editorAPI.updateShape 等允许更新几何的接口
     } catch (e) {
       console.error('保存失败', e)
     }
@@ -296,12 +368,10 @@ export function useCanvasLogic(stageContainerRef) {
   // --- 5. 初始化逻辑 ---
   const initKonva = () => {
     const container = stageContainerRef.value
-
     if (!container || !currentMap.value) return
 
     const width = container.clientWidth
     const height = container.clientHeight
-
     if (width === 0 || height === 0) return
 
     if (stage) stage.destroy()
@@ -313,14 +383,13 @@ export function useCanvasLogic(stageContainerRef) {
       draggable: true
     })
 
-    layer = new Konva.Layer()      // 最底层背景
-    baseLayer = new Konva.Layer()  // 建筑轮廓
-    shapesLayer = new Konva.Layer()// 业务图层
+    layer = new Konva.Layer()
+    baseLayer = new Konva.Layer()
+    shapesLayer = new Konva.Layer()
 
-    // 1. 绘制无限大背景，接收拖拽和取消选中事件
     const bg = new Konva.Rect({
       x: -50000, y: -50000, width: 100000, height: 100000,
-      fill: '#f8fafc' // 整个画布背景色
+      fill: '#f8fafc'
     })
 
     bg.on('click', () => {
@@ -328,13 +397,10 @@ export function useCanvasLogic(stageContainerRef) {
     })
 
     layer.add(bg)
-
-    // 按顺序添加图层
     stage.add(layer)
     stage.add(baseLayer)
     stage.add(shapesLayer)
 
-    // 滚轮缩放
     stage.on('wheel', (e) => {
       e.evt.preventDefault()
       const scaleBy = 1.1
@@ -358,24 +424,18 @@ export function useCanvasLogic(stageContainerRef) {
       stage.position(newPos)
     })
 
-    // 绘制内容
-    drawBaseMap()     // 绘制建筑底图
-    drawAllFeatures() // 绘制业务区域
-
-    autoFitView() // 自动适配
+    drawBaseMap()
+    drawAllFeatures()
+    autoFitView()
   }
 
-  // --- 6. 响应式监听 ---
   watchPostEffect(() => {
     const isReady = currentMap.value && stageContainerRef.value && !loading.value
-
     if (isReady) {
       if (!stage || (stage && stage.attrs.mapId !== currentMap.value.id)) {
         initKonva()
         if (stage) stage.attrs.mapId = currentMap.value.id
       } else {
-        // 数据更新时重绘（例如属性变更、选中切换）
-        // 如果底图没变，可以只重绘 shapesLayer，但这里为了简单全重绘
         drawBaseMap()
         drawAllFeatures()
       }
@@ -386,7 +446,5 @@ export function useCanvasLogic(stageContainerRef) {
     if (stage) stage.destroy()
   })
 
-  return {
-    autoFitView
-  }
+  return { autoFitView }
 }

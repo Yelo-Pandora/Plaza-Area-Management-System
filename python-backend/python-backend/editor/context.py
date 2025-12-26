@@ -9,6 +9,8 @@ from core.models import (
     EventareaMap,
     Otherarea,
     OtherareaMap,
+    Facility,
+    FacilityMap
 )
 
 
@@ -246,3 +248,51 @@ class OtherareaContext:
     def delete(otherarea_id):
         """删除其他区域"""
         Otherarea.objects.filter(id=otherarea_id).delete()
+
+
+class FacilityContext:
+    """
+    设施（Facility）的数据访问层
+    """
+
+    @staticmethod
+    def get_all():
+        return Facility.objects.all()
+
+    @staticmethod
+    def get_by_id(facility_id):
+        return Facility.objects.filter(id=facility_id).first()
+
+    @staticmethod
+    def create(location, map_id=None, type_val=None):
+        try:
+            loc_geom = GEOSGeometry(location)
+            if loc_geom.srid != 2385:
+                loc_geom.srid = 2385
+        except Exception as e:
+            raise ValueError(f"Invalid spatial data: {str(e)}")
+
+        facility = Facility.objects.create(
+            location=loc_geom,
+            type=type_val if type_val is not None else 0
+        )
+        if map_id is not None:
+            FacilityMap.objects.create(facility=facility, map_id=map_id)
+        return facility
+
+    @staticmethod
+    def update_location(facility_id, location):
+        """更新设施位置"""
+        try:
+            loc_geom = GEOSGeometry(location)
+            if loc_geom.srid != 2385:
+                loc_geom.srid = 2385
+        except Exception as e:
+            raise ValueError(f"Invalid spatial data: {str(e)}")
+
+        Facility.objects.filter(id=facility_id).update(location=loc_geom)
+        return FacilityContext.get_by_id(facility_id)
+
+    @staticmethod
+    def delete(facility_id):
+        Facility.objects.filter(id=facility_id).delete()

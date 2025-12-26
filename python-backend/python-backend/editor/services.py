@@ -1,4 +1,4 @@
-from .context import StoreareaContext, EventContext, EventareaContext, OtherareaContext
+from .context import StoreareaContext, EventContext, EventareaContext, OtherareaContext,FacilityContext
 
 
 class StoreareaService:
@@ -162,3 +162,27 @@ class OtherareaService:
         """删除其他区域"""
         # 可以在这里添加业务逻辑验证
         return OtherareaContext.delete(otherarea_id)
+
+class FacilityService:
+    """
+    设施（Facility）的业务层
+    """
+    @staticmethod
+    def get_all_facilities():
+        return FacilityContext.get_all()
+
+    @staticmethod
+    def get_facility_by_id(facility_id):
+        return FacilityContext.get_by_id(facility_id)
+
+    @staticmethod
+    def create_facility(location, map_id=None, type_val=None):
+        return FacilityContext.create(location, map_id, type_val)
+
+    @staticmethod
+    def update_facility_location(facility_id, location):
+        return FacilityContext.update_location(facility_id, location)
+
+    @staticmethod
+    def delete_facility(facility_id):
+        return FacilityContext.delete(facility_id)
