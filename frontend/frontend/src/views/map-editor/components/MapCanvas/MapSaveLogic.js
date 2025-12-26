@@ -9,12 +9,12 @@ export function useMapSaveLogic() {
     storeareas,
     eventareas,
     otherareas,
-    facilities
+    facilities,
+    loadCurrentMap // 引入重新加载函数
   } = useMapEditorStore()
 
   const isSaving = ref(false)
 
-  // 类型映射
   const backendTypeMap = {
     'storearea': 'store',
     'eventarea': 'event',
@@ -26,72 +26,70 @@ export function useMapSaveLogic() {
     return item.name || item.store_name || item.event_name || item.description || '未命名'
   }
 
-  // --- 核心修改：将几何数据转换为 WKT (Well-Known Text) 格式 ---
-  // WKT 格式不带 SRID 信息，后端 GEOSGeometry(wkt, srid=2385) 可以直接接受
+  // --- 转换几何为 WKT ---
   const toWKT = (item) => {
-    // 1. 处理设施 (Point)
+    // 1. 设施 (Point)
     if (item._type === 'facility') {
       const loc = item.location
       let x, y
+      if (loc && typeof loc.x === 'number') { x = loc.x; y = loc.y }
+      else if (loc && loc.type === 'Point') { [x, y] = loc.coordinates }
+      else if (item.geometry && item.geometry.type === 'Point') { [x, y] = item.geometry.coordinates }
 
-      // 处理 {x, y} 对象 (Konva 拖拽后的格式)
-      if (loc && typeof loc.x === 'number') {
-        x = loc.x
-        y = loc.y
-      }
-      // 处理 GeoJSON Point (初始加载的格式)
-      else if (loc && loc.type === 'Point') {
-        [x, y] = loc.coordinates
-      }
-      // 处理 GeoJSON Point 在 geometry 字段的情况
-      else if (item.geometry && item.geometry.type === 'Point') {
-        [x, y] = item.geometry.coordinates
-      }
-
-      if (x !== undefined && y !== undefined) {
-        return `POINT (${x} ${y})`
-      }
+      if (x !== undefined && y !== undefined) return `POINT (${x} ${y})`
       return null
     }
-
-    // 2. 处理区域 (Polygon)
+    // 2. 区域 (Polygon)
     const geo = item.geometry
     if (!geo) return null
-
     let rings = []
-
-    // 提取坐标数组
-    if (geo.type === 'Polygon') {
-      rings = geo.coordinates
-    } else if (geo.type === 'MultiPolygon') {
-      // 简化处理：只取第一个多边形的外环
-      // 这里的逻辑假设商铺等都是单多边形
-      rings = geo.coordinates[0]
-    }
+    if (geo.type === 'Polygon') rings = geo.coordinates
+    else if (geo.type === 'MultiPolygon') rings = geo.coordinates[0]
 
     if (rings && rings.length > 0) {
-      // rings[0] 是外环
-      // 格式转换: [[x1, y1], [x2, y2]] -> "x1 y1, x2 y2"
       const coordsStr = rings[0].map(p => `${p[0]} ${p[1]}`).join(', ')
       return `POLYGON ((${coordsStr}))`
     }
-
     return null
   }
 
-  // 单个保存 API 调用
-  const saveItem = async (item, type) => {
-    // 获取 WKT 字符串
-    const wktData = toWKT(item)
+  // --- 判断是否为新元素 ---
+  // 依据：ID 是时间戳 (13位) 肯定比数据库自增 ID (通常 < 10位) 大
+  const isNewItem = (id) => {
+    return String(id).length > 10
+  }
 
-    if (type === 'storearea') {
-      return editorAPI.updateEditorStoreareaShape(item.id, wktData)
-    } else if (type === 'eventarea') {
-      return editorAPI.updateEditorEventareaShape(item.id, wktData)
-    } else if (type === 'otherarea') {
-      return editorAPI.updateEditorOtherareaShape(item.id, wktData)
-    } else if (type === 'facility') {
-      return editorAPI.updateEditorFacilityLocation(item.id, wktData)
+  // --- 智能保存单个元素 (Create 或 Update) ---
+  const saveItem = async (item, type) => {
+    const wktData = toWKT(item)
+    const mapId = currentMapId.value
+
+    // 判断是新建还是更新
+    if (isNewItem(item.id)) {
+      // === 新建逻辑 ===
+      console.log(`正在创建新元素: ${type}`)
+      if (type === 'storearea') {
+        return editorAPI.createEditorStorearea(wktData, mapId)
+      } else if (type === 'eventarea') {
+        return editorAPI.createEditorEventarea(wktData, mapId)
+      } else if (type === 'otherarea') {
+        // 传入 item.type (其他区域类型)
+        return editorAPI.createEditorOtherarea(wktData, mapId, item.type || 0)
+      } else if (type === 'facility') {
+        // 传入 item.type (设施类型)
+        return editorAPI.createEditorFacility(wktData, mapId, item.type || 0)
+      }
+    } else {
+      // === 更新逻辑 ===
+      if (type === 'storearea') {
+        return editorAPI.updateEditorStoreareaShape(item.id, wktData)
+      } else if (type === 'eventarea') {
+        return editorAPI.updateEditorEventareaShape(item.id, wktData)
+      } else if (type === 'otherarea') {
+        return editorAPI.updateEditorOtherareaShape(item.id, wktData)
+      } else if (type === 'facility') {
+        return editorAPI.updateEditorFacilityLocation(item.id, wktData)
+      }
     }
   }
 
@@ -113,17 +111,24 @@ export function useMapSaveLogic() {
         ...facilities.value.map(i => ({ ...i, _type: 'facility' }))
       ]
 
-      // 2. 构造批量校验请求数据 (全部转为 WKT)
+      // 2. 构造批量校验请求
       const updates = []
+      let hasNewItems = false
 
       for (const item of allItems) {
         const wkt = toWKT(item)
         if (wkt) {
+          // 如果是新元素，校验时给个假ID (避免 ID='1703...' 导致后端转换int报错或逻辑混乱)
+          // 或者直接传临时ID，只要后端 validate_batch 的 updated_keys 逻辑能处理字符串即可(我们在上一步已经修复了后端支持str id)
+          // 为了保险，新元素我们不做“排除旧位置”的校验（因为它没有旧位置），这在后端 validate_batch 逻辑天然支持
+
+          if (isNewItem(item.id)) hasNewItems = true;
+
           updates.push({
             id: item.id,
             type: backendTypeMap[item._type] || item._type,
             name: getName(item),
-            geometry: wkt // 发送 WKT 字符串
+            geometry: wkt
           })
         }
       }
@@ -134,32 +139,36 @@ export function useMapSaveLogic() {
         return
       }
 
-      console.log('正在发送批量校验请求(WKT)...', updates)
-
-      // 3. 发送后端批量校验
-      // 后端 map/services.py 中的 GEOSGeometry(geo_str) 也能完美兼容 WKT
+      // 3. 发送校验
+      console.log('正在发送批量校验请求...', updates)
       const validateRes = await validateBatchGeometry({
         map_id: currentMapId.value,
         updates: updates
       })
 
-      // 4. 处理校验结果
       if (validateRes && validateRes.valid === false) {
         const errors = validateRes.errors || []
         const errorMsg = `保存被拒绝，发现 ${errors.length} 个问题：\n\n` +
-                         errors.slice(0, 10).join('\n') +
-                         (errors.length > 10 ? `\n...等共 ${errors.length} 个问题` : '')
+          errors.slice(0, 5).join('\n') +
+          (errors.length > 5 ? `\n...等共 ${errors.length} 个问题` : '')
         alert(errorMsg)
         isSaving.value = false
         return
       }
 
-      // 5. 校验通过，执行并发保存
+      // 4. 执行保存 (Create 或 Update)
       const savePromises = allItems
-        .filter(item => toWKT(item)) // 再次过滤确保有几何数据
+        .filter(item => toWKT(item))
         .map(item => saveItem(item, item._type))
 
       await Promise.all(savePromises)
+
+      // 5. 关键：如果包含新创建的元素，必须重新加载地图
+      // 否则新元素在前端还是临时ID，下次保存会重复创建
+      if (hasNewItems) {
+        console.log('检测到新建元素，正在刷新地图数据以同步ID...')
+        await loadCurrentMap()
+      }
 
       alert('保存成功！')
 

@@ -163,3 +163,4 @@ export function updateEditorFacilityLocation(id, locationGeojson) {
     }
   })
 }
+
