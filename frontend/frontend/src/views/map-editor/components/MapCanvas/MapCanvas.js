@@ -3,18 +3,14 @@ import { useMapEditorStore } from '../../composables/useMapEditorStore'
 import * as managementAPI from '@/api/management'
 import * as KonvaImport from 'konva'
 
-// --- 1. Konva 导入兼容性处理 (核心修复) ---
-// 解决 Vite/Rollup 打包后可能出现的 default 嵌套问题
+// --- 1. Konva 导入兼容性处理 ---
 const getKonva = () => {
   let k = KonvaImport
-  // 递归查找，直到找到 Stage 构造函数
-  // 最多尝试 3 层，避免死循环
   for (let i = 0; i < 3; i++) {
     if (k.Stage) return k
     if (k.default) k = k.default
     else break
   }
-  // 兜底：尝试使用全局挂载的对象 (vue-konva 可能挂载了)
   if (window.Konva) return window.Konva
   return k
 }
@@ -35,8 +31,9 @@ export function useCanvasLogic(stageContainerRef) {
   } = useMapEditorStore()
 
   let stage = null
-  let layer = null
-  let shapesLayer = null
+  let layer = null       // 背景层 (用于点击空白处取消选中)
+  let baseLayer = null   // 新增：底图层 (建筑轮廓、墙体、镂空)
+  let shapesLayer = null // 交互层 (店铺、活动区、设施)
 
   // 类型颜色配置
   const typeColors = {
@@ -46,14 +43,16 @@ export function useCanvasLogic(stageContainerRef) {
     facility: '#8b5cf6',
   }
 
-  // --- 2. 自动适配视图 (防止图形画在屏幕外) ---
+  // --- 2. 自动适配视图 ---
   const autoFitView = () => {
-    if (!stage || !shapesLayer) return
+    // 优先适配底图，如果没有底图则适配所有内容
+    const targetLayer = (baseLayer && baseLayer.hasChildren()) ? baseLayer : shapesLayer
 
-    // 获取所有图形的边界框
-    const box = shapesLayer.getClientRect({ skipTransform: true })
+    if (!stage || !targetLayer) return
 
-    // 如果没有图形或图形为空，重置视图
+    // 获取内容的边界框
+    const box = targetLayer.getClientRect({ skipTransform: true })
+
     if (box.width === 0 || box.height === 0) {
       stage.position({ x: 0, y: 0 })
       stage.scale({ x: 1, y: 1 })
@@ -67,52 +66,94 @@ export function useCanvasLogic(stageContainerRef) {
     // 计算缩放比例
     const scaleX = (stageWidth - padding * 2) / box.width
     const scaleY = (stageHeight - padding * 2) / box.height
-    const scale = Math.min(scaleX, scaleY) // 保持纵横比
+    const scale = Math.min(scaleX, scaleY)
 
     // 计算居中位置
     const centerX = stageWidth / 2 - (box.x + box.width / 2) * scale
     const centerY = stageHeight / 2 - (box.y + box.height / 2) * scale
 
-    // 应用变换
     stage.position({ x: centerX, y: centerY })
     stage.scale({ x: scale, y: scale })
     stage.batchDraw()
-
-    console.log(`[AutoFit] 视图已自动适配。缩放: ${scale.toFixed(2)}, 位移: (${centerX.toFixed(0)}, ${centerY.toFixed(0)})`)
   }
 
   // --- 3. 绘制逻辑 ---
 
-  // 绘制单个多边形区域
+  // 新增：绘制底图 (建筑轮廓)
+  const drawBaseMap = () => {
+    if (!baseLayer || !currentMap.value || !currentMap.value.detail_geojson) return
+
+    baseLayer.destroyChildren()
+
+    const geojson = currentMap.value.detail_geojson
+    // 后端返回的是 GeometryCollection
+    // 约定：索引 0 是外轮廓 (地板)，索引 1+ 是内部镂空 (中庭等)
+
+    let geometries = []
+    if (geojson.type === 'GeometryCollection') {
+      geometries = geojson.geometries
+    } else if (geojson.type === 'Polygon' || geojson.type === 'MultiPolygon') {
+      // 兼容可能只返回单个 Polygon 的情况
+      geometries = [geojson]
+    }
+
+    geometries.forEach((geom, index) => {
+      let points = []
+      if (geom.type === 'Polygon') {
+        points = geom.coordinates[0].flat()
+      } else if (geom.type === 'MultiPolygon') {
+        points = geom.coordinates[0][0].flat()
+      }
+
+      if (points.length < 4) return
+
+      // 样式区分：索引0是地板，其他是镂空
+      const isFloor = index === 0
+
+      const poly = new Konva.Line({
+        points: points,
+        closed: true,
+        // 地板用浅灰，镂空用背景色覆盖(模拟挖空)
+        fill: isFloor ? '#e2e8f0' : '#f8fafc',
+        stroke: '#94a3b8', // 边框颜色
+        strokeWidth: 2 / (stage ? stage.scaleX() : 1), // 这里的边框可以稍微粗一点
+        listening: false, // 底图不响应点击事件，避免干扰上方区域的操作
+        id: `base-${index}`
+      })
+
+      baseLayer.add(poly)
+    })
+
+    baseLayer.batchDraw()
+  }
+
+  // 绘制单个多边形区域 (店铺、活动区等)
   const drawPolygon = (area, type) => {
     if (!area.geometry || !area.geometry.coordinates) return
 
     let points = []
-    // 解析 GeoJSON Polygon / MultiPolygon
     if (area.geometry.type === 'Polygon') {
       points = area.geometry.coordinates[0].flat()
     } else if (area.geometry.type === 'MultiPolygon') {
       points = area.geometry.coordinates[0][0].flat()
     }
 
-    if (points.length < 4) return // 至少需要2个点(x,y)
+    if (points.length < 4) return
 
     const color = typeColors[type]
 
-    // 创建多边形
     const poly = new Konva.Line({
       points: points,
       closed: true,
-      fill: `${color}33`, // 20% 透明度
+      fill: `${color}33`,
       stroke: color,
-      strokeWidth: 1 / (stage ? stage.scaleX() : 1), // 保持线条视觉宽度一致
+      strokeWidth: 1 / (stage ? stage.scaleX() : 1),
       draggable: true,
-      name: 'feature-shape', // 用于查找
+      name: 'feature-shape',
       id: `${type}-${area.id}`,
-      hitStrokeWidth: 10 // 增加点击判定范围
+      hitStrokeWidth: 10
     })
 
-    // 选中高亮状态
     if (selectedFeature.value?.id === area.id && selectedType.value === type) {
       poly.strokeWidth(3 / (stage ? stage.scaleX() : 1))
       poly.fill(`${color}66`)
@@ -122,7 +163,6 @@ export function useCanvasLogic(stageContainerRef) {
       poly.moveToTop()
     }
 
-    // 事件绑定
     poly.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature(type, area)
@@ -132,7 +172,6 @@ export function useCanvasLogic(stageContainerRef) {
       handleGeometryUpdate(type, area, this)
     })
 
-    // 鼠标悬停效果
     poly.on('mouseenter', () => {
       stage.container().style.cursor = 'pointer'
       if (selectedFeature.value?.id !== area.id) {
@@ -152,7 +191,7 @@ export function useCanvasLogic(stageContainerRef) {
     shapesLayer.add(poly)
   }
 
-  // 绘制设施 (点/圆形)
+  // 绘制设施
   const drawFacility = (facility) => {
     let x = 0, y = 0
 
@@ -167,12 +206,11 @@ export function useCanvasLogic(stageContainerRef) {
     }
 
     const color = typeColors['facility']
-    // 设施大小稍微固定一点，不随缩放变得过大/过小
     const radius = 5 / (stage ? stage.scaleX() : 1)
 
     const circle = new Konva.Circle({
       x, y,
-      radius: Math.max(radius, 2), // 最小半径2
+      radius: Math.max(radius, 2),
       fill: color,
       stroke: 'white',
       strokeWidth: 1,
@@ -192,9 +230,9 @@ export function useCanvasLogic(stageContainerRef) {
     })
 
     circle.on('dragend', function() {
-      // 更新设施位置逻辑...
-      // 简单实现：仅更新本地，后端保存逻辑同上
+      // 设施位置更新逻辑: 目前仅更新 UI 状态
       facility.location = { x: this.x(), y: this.y() }
+      // 如果需要调用后端 API，需在 editor 模块补充 updateFacilityLocation 接口
     })
 
     shapesLayer.add(circle)
@@ -215,7 +253,6 @@ export function useCanvasLogic(stageContainerRef) {
 
   // --- 4. 数据保存逻辑 ---
   const handleGeometryUpdate = async (type, area, shapeNode) => {
-    // 计算绝对坐标 (Points是相对的 + 拖拽后的偏移 x/y)
     const points = shapeNode.points()
     const dx = shapeNode.x()
     const dy = shapeNode.y()
@@ -225,7 +262,6 @@ export function useCanvasLogic(stageContainerRef) {
       newCoords.push([points[i] + dx, points[i+1] + dy])
     }
 
-    // 确保闭合
     if (newCoords.length > 0) {
       const start = newCoords[0]
       const end = newCoords[newCoords.length - 1]
@@ -234,51 +270,39 @@ export function useCanvasLogic(stageContainerRef) {
       }
     }
 
-    // 更新本地数据引用
     area.geometry = { type: 'Polygon', coordinates: [newCoords] }
 
-    // 重置节点位置 (偏移量已合入坐标)
     shapeNode.position({ x: 0, y: 0 })
     shapeNode.points(newCoords.flat())
     shapesLayer.batchDraw()
 
     console.log(`[Save] 更新 ${type} ID:${area.id} 几何数据`)
 
-    // TODO: 调用API保存 (视后端接口而定)
+    // 调用 API 保存
     try {
       const apiMap = {
-        storearea: managementAPI.updateManagementStorearea,
+        storearea: managementAPI.updateManagementStorearea, // 注意：后端需确保 management 模块允许更新 shape，或者切换到 editor 模块的 API
         eventarea: managementAPI.updateManagementEventarea,
         otherarea: managementAPI.updateManagementOtherarea
       }
-      if (apiMap[type]) {
-        // 注意：后端可能需要特定格式，这里假设接受 geometry 对象
-        // await apiMap[type](area.id, { geometry: area.geometry })
-      }
+      // 根据你提供的 editor.js，应该使用 editor 模块的 API 来更新 shape
+      // 这里如果 managementAPI 不允许更新 shape，请引入 editorAPI 并替换
+      // 示例: editorAPI.updateEditorStoreareaShape(area.id, area.geometry)
     } catch (e) {
       console.error('保存失败', e)
     }
   }
 
-  // --- 5. 核心初始化逻辑 ---
+  // --- 5. 初始化逻辑 ---
   const initKonva = () => {
     const container = stageContainerRef.value
 
-    // 双重检查：必须 DOM 存在 且 数据存在
-    if (!container || !currentMap.value) {
-      return
-    }
+    if (!container || !currentMap.value) return
 
-    // 获取实际尺寸
     const width = container.clientWidth
     const height = container.clientHeight
 
-    if (width === 0 || height === 0) {
-      console.warn('[Konva] 容器尺寸为 0，可能被隐藏或布局未完成')
-      return
-    }
-
-    console.log(`[Konva] 初始化舞台: ${width}x${height}, 地图ID: ${currentMap.value.id}`)
+    if (width === 0 || height === 0) return
 
     if (stage) stage.destroy()
 
@@ -289,25 +313,28 @@ export function useCanvasLogic(stageContainerRef) {
       draggable: true
     })
 
-    layer = new Konva.Layer()
-    shapesLayer = new Konva.Layer() // 专门放图形
+    layer = new Konva.Layer()      // 最底层背景
+    baseLayer = new Konva.Layer()  // 建筑轮廓
+    shapesLayer = new Konva.Layer()// 业务图层
 
-    // 背景层（用于接收拖拽平移事件）
+    // 1. 绘制无限大背景，接收拖拽和取消选中事件
     const bg = new Konva.Rect({
       x: -50000, y: -50000, width: 100000, height: 100000,
-      fill: '#f8fafc' // 浅灰背景
+      fill: '#f8fafc' // 整个画布背景色
     })
 
-    // 点击背景取消选中
     bg.on('click', () => {
       selectFeature('', null)
     })
 
     layer.add(bg)
+
+    // 按顺序添加图层
     stage.add(layer)
+    stage.add(baseLayer)
     stage.add(shapesLayer)
 
-    // 滚轮缩放逻辑
+    // 滚轮缩放
     stage.on('wheel', (e) => {
       e.evt.preventDefault()
       const scaleBy = 1.1
@@ -319,7 +346,7 @@ export function useCanvasLogic(stageContainerRef) {
         y: (pointer.y - stage.y()) / oldScale,
       }
 
-      const direction = e.evt.deltaY > 0 ? -1 : 1 // 向下滚动缩小，向上滚动放大
+      const direction = e.evt.deltaY > 0 ? -1 : 1
       const newScale = direction > 0 ? oldScale * scaleBy : oldScale / scaleBy
 
       stage.scale({ x: newScale, y: newScale })
@@ -331,24 +358,25 @@ export function useCanvasLogic(stageContainerRef) {
       stage.position(newPos)
     })
 
-    drawAllFeatures()
+    // 绘制内容
+    drawBaseMap()     // 绘制建筑底图
+    drawAllFeatures() // 绘制业务区域
 
-    // 初始化完成后，自动适应视图
-    autoFitView()
+    autoFitView() // 自动适配
   }
 
-  // --- 6. 响应式监听 (核心修复) ---
-  // 使用 watchPostEffect 确保在 DOM 更新后执行
+  // --- 6. 响应式监听 ---
   watchPostEffect(() => {
     const isReady = currentMap.value && stageContainerRef.value && !loading.value
 
     if (isReady) {
-      // 只有当 ID 变化或 Stage 不存在时才彻底重置
       if (!stage || (stage && stage.attrs.mapId !== currentMap.value.id)) {
         initKonva()
-        if (stage) stage.attrs.mapId = currentMap.value.id // 标记当前 ID
+        if (stage) stage.attrs.mapId = currentMap.value.id
       } else {
-        // 如果 Stage 还在，只是数据变了（比如选中状态、新增区域），只重绘图层
+        // 数据更新时重绘（例如属性变更、选中切换）
+        // 如果底图没变，可以只重绘 shapesLayer，但这里为了简单全重绘
+        drawBaseMap()
         drawAllFeatures()
       }
     }
@@ -359,7 +387,6 @@ export function useCanvasLogic(stageContainerRef) {
   })
 
   return {
-    // 如果需要暴露方法给组件，可以在这里返回
     autoFitView
   }
 }
