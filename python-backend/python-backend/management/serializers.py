@@ -7,6 +7,8 @@ def get_eventarea_serializer():
     Eventarea = apps.get_model('core', 'Eventarea')
     
     class EventareaSerializer(serializers.ModelSerializer):
+        map_id = serializers.IntegerField(source='eventareamap_set.first.map_id', read_only=True)
+        
         class Meta:
             model = Eventarea
             exclude = ['shape']
@@ -19,6 +21,8 @@ def get_otherarea_serializer():
     Otherarea = apps.get_model('core', 'Otherarea')
     
     class OtherareaSerializer(serializers.ModelSerializer):
+        map_id = serializers.IntegerField(source='otherareamap_set.first.map_id', read_only=True)
+        
         class Meta:
             model = Otherarea
             exclude = ['shape']
@@ -43,6 +47,8 @@ def get_storearea_serializer():
     Storearea = apps.get_model('core', 'Storearea')
     
     class StoreareaSerializer(serializers.ModelSerializer):
+        map_id = serializers.IntegerField(source='storeareamap_set.first.map_id', read_only=True)
+        
         class Meta:
             model = Storearea
             exclude = ['shape']
@@ -55,6 +61,8 @@ def get_facility_serializer():
     Facility = apps.get_model('core', 'Facility')
     
     class FacilitySerializer(serializers.ModelSerializer):
+        map_id = serializers.IntegerField(source='facilitymap_set.first.map_id', read_only=True)
+        
         class Meta:
             model = Facility
             exclude = ['location']

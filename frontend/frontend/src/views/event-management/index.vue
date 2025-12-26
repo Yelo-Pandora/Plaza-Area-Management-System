@@ -4,9 +4,6 @@
     <div class="header">
       <h1 class="title">活动管理</h1>
       <div class="actions">
-        <button class="btn btn-primary" @click="handleCreate">
-          <span class="btn-icon">+</span> 新建活动
-        </button>
       </div>
     </div>
 
@@ -81,9 +78,9 @@
           <div class="table-cell" style="flex: 0.5;">ID</div>
           <div class="table-cell" style="flex: 2;">活动名称</div>
           <div class="table-cell" style="flex: 1;">类型</div>
-          <div class="table-cell" style="flex: 1.2;">时间范围</div>
+          <div class="table-cell" style="flex: 1;">起始时间</div>
+          <div class="table-cell" style="flex: 1;">结束时间</div>
           <div class="table-cell" style="flex: 0.8;">状态</div>
-          <div class="table-cell" style="flex: 1.2;">创建时间</div>
           <div class="table-cell" style="flex: 1.5;">操作</div>
         </div>
       </div>
@@ -120,20 +117,16 @@
                 {{ getTypeLabel(event.event_type) }}
               </span>
             </div>
-            <div class="table-cell" style="flex: 1.2;">
-              <div class="time-range">
-                <div>{{ formatDateTime(event.start_time) }}</div>
-                <div class="time-to">至</div>
-                <div>{{ formatDateTime(event.end_time) }}</div>
-              </div>
+            <div class="table-cell" style="flex: 1;">
+              {{ formatDateTime(event.start_time) }}
+            </div>
+            <div class="table-cell" style="flex: 1;">
+              {{ formatDateTime(event.end_time) }}
             </div>
             <div class="table-cell" style="flex: 0.8;">
               <span :class="['status-badge', getEventStatus(event)]">
                 {{ getEventStatusText(event) }}
               </span>
-            </div>
-            <div class="table-cell" style="flex: 1.2;">
-              {{ formatDate(event.created_at) }}
             </div>
             <div class="table-cell actions-cell" style="flex: 1.5;">
               <button class="action-btn edit-btn" @click="handleEdit(event)">
@@ -248,25 +241,25 @@
               ></textarea>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">主办方</label>
-              <input
-                v-model="formData.organizer"
-                type="text"
-                class="form-input"
-                placeholder="请输入主办方名称（可选）"
-              >
-            </div>
+<!--            <div class="form-group">-->
+<!--              <label class="form-label">主办方</label>-->
+<!--              <input-->
+<!--                v-model="formData.organizer"-->
+<!--                type="text"-->
+<!--                class="form-input"-->
+<!--                placeholder="请输入主办方名称（可选）"-->
+<!--              >-->
+<!--            </div>-->
 
-            <div class="form-group">
-              <label class="form-label">活动地址</label>
-              <input
-                v-model="formData.location"
-                type="text"
-                class="form-input"
-                placeholder="请输入活动地址（可选）"
-              >
-            </div>
+<!--            <div class="form-group">-->
+<!--              <label class="form-label">活动地址</label>-->
+<!--              <input-->
+<!--                v-model="formData.location"-->
+<!--                type="text"-->
+<!--                class="form-input"-->
+<!--                placeholder="请输入活动地址（可选）"-->
+<!--              >-->
+<!--            </div>-->
 
             <div class="form-group">
               <label class="form-label">状态</label>
@@ -492,7 +485,7 @@ const eventTypes = [
 
 // 计算属性
 const filteredEvents = computed(() => {
-  const now = new Date()
+  // const now = new Date()
 
   return events.value.filter(event => {
     // 按类型筛选
@@ -512,13 +505,15 @@ const filteredEvents = computed(() => {
 
     // 按时间范围筛选
     if (filters.value.startDate) {
-      const eventDate = new Date(event.start_time)
-      if (eventDate < new Date(filters.value.startDate + 'T00:00:00')) return false
+      // 使用字符串比较日期部分
+      const eventDatePart = event.start_time?.substring(0, 10) || ''
+      if (eventDatePart < filters.value.startDate) return false
     }
 
     if (filters.value.endDate) {
-      const eventDate = new Date(event.end_time)
-      if (eventDate > new Date(filters.value.endDate + 'T23:59:59')) return false
+      // 使用字符串比较日期部分
+      const eventDatePart = event.end_time?.substring(0, 10) || ''
+      if (eventDatePart > filters.value.endDate) return false
     }
 
     return true
@@ -544,10 +539,14 @@ const loadData = async () => {
     const response = await managementAPI.listManagementEvents()
     events.value = response.data || response
 
-    // 确保数据有event_type字段
+    // 确保数据有正确的字段
     events.value = events.value.map(event => ({
       ...event,
-      event_type: event.event_type || '0'
+      // ⭐ 字段映射（关键）
+      start_time: event.start_time ?? event.start_date,
+      end_time: event.end_time ?? event.end_date,
+      event_type: event.event_type ?? '0',
+      is_active: event.is_active !== undefined ? event.is_active : true
     }))
 
   } catch (error) {
@@ -592,12 +591,20 @@ const getTypeClass = (type) => {
 
 const getEventStatus = (event) => {
   const now = new Date()
-  const startTime = new Date(event.start_time)
-  const endTime = new Date(event.end_time)
+  const startTime = parseBackendDateTime(event.start_time)
+  const endTime = parseBackendDateTime(event.end_time)
 
+  // 如果活动本身是停用状态，直接返回inactive
   if (!event.is_active) return 'inactive'
-  if (now < startTime) return 'upcoming'
-  if (now > endTime) return 'ended'
+
+  // 如果时间解析成功，根据时间判断状态
+  if (startTime && endTime) {
+    if (now < startTime) return 'upcoming'
+    if (now > endTime) return 'ended'
+    return 'active'
+  }
+
+  // 如果时间解析失败，但活动是启用状态，返回active作为默认状态
   return 'active'
 }
 
@@ -612,21 +619,68 @@ const getEventStatusText = (event) => {
   return statusMap[status] || '未知'
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('zh-CN')
-}
+// const parseBackendDateTime = (dateString) => {
+//   if (!dateString) return null
+//   // 处理后端的带微秒格式：2025-12-23 04:27:42.443939
+//   // 将空格替换为T，确保浏览器能正确解析
+//   const isoString = dateString.replace(' ', 'T')
+//   return new Date(isoString)
+// }
+const parseBackendDateTime = (dateString) => {
+  if (!dateString) return null
+
+  try {
+    let normalized = dateString
+
+    // 1️⃣ PostgreSQL: 2025-12-23 04:27:42.443939
+    normalized = normalized.replace(' ', 'T')
+
+    // 2️⃣ 移除多余微秒（保留毫秒）
+    normalized = normalized.replace(/\.(\d{3})\d+/, '.$1')
+
+    // 3️⃣ 如果没有时区，默认当作本地时间
+    const date = new Date(normalized)
+
+    return isNaN(date.getTime()) ? null : date
+  } catch (error) {
+    console.error('日期解析错误:', error, '原始字符串:', dateString)
+    return null
+  }
+};
+
+// 将后端日期时间字符串转换为前端datetime-local格式
+const backendToDateTimeLocal = (dateString) => {
+  if (!dateString) return ''
+
+  // "2025-12-23 04:27:42" → "2025-12-23T04:27"
+  return dateString.replace(' ', 'T').slice(0, 16)
+};
+
+// 将前端datetime-local格式转换为后端格式
+const dateTimeLocalToBackend = (localValue) => {
+  if (!localValue) return null
+
+  // "2025-12-23T04:27" → "2025-12-23 04:27:00"
+  return localValue.replace('T', ' ') + ':00'
+};
+// const formatDate = (dateString) => {
+//   if (!dateString) return '-'
+//   const date = parseBackendDateTime(dateString)
+//   return date ? date.toLocaleDateString('zh-CN') : '-'
+// }
+
+
 
 const formatDateTime = (dateString) => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN', {
+  const date = parseBackendDateTime(dateString)
+  return date ? date.toLocaleString('zh-CN', {
+    year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }) : '-'
 }
 
 const handleCreate = () => {
@@ -635,12 +689,18 @@ const handleCreate = () => {
   const tomorrow = new Date(now)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
+  // 将日期转换为本地时间格式
+  const toLocalInput = (date) =>
+    new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+
   formData.value = {
     id: null,
     event_name: '',
     event_type: '0',
-    start_time: now.toISOString().slice(0, 16),
-    end_time: tomorrow.toISOString().slice(0, 16),
+    start_time: toLocalInput(now),
+    end_time: toLocalInput(tomorrow),
     description: '',
     organizer: '',
     location: '',
@@ -658,23 +718,16 @@ const handleEdit = async (event) => {
     const response = await managementAPI.getManagementEvent(event.id)
     const eventData = response.data || response
 
-    // 转换时间格式为datetime-local可用的格式
-    const formatForInput = (dateString) => {
-      if (!dateString) return ''
-      const date = new Date(dateString)
-      return date.toISOString().slice(0, 16)
-    }
-
     formData.value = {
       id: eventData.id,
       event_name: eventData.event_name || '',
       event_type: eventData.event_type?.toString() || '0',
-      start_time: formatForInput(eventData.start_time),
-      end_time: formatForInput(eventData.end_time),
+      start_time: backendToDateTimeLocal(eventData.start_time ?? eventData.start_date),
+      end_time: backendToDateTimeLocal(eventData.end_time ?? eventData.end_date),
       description: eventData.description || '',
       organizer: eventData.organizer || '',
       location: eventData.location || '',
-      is_active: eventData.is_active !== undefined ? eventData.is_active : true
+      is_active: eventData.is_active ?? true
     }
 
     showModal.value = true
@@ -691,6 +744,7 @@ const handleSubmit = async () => {
   try {
     const submitData = { ...formData.value }
 
+
     // 验证时间
     const startTime = new Date(submitData.start_time)
     const endTime = new Date(submitData.end_time)
@@ -698,6 +752,10 @@ const handleSubmit = async () => {
     if (endTime <= startTime) {
       throw new Error('结束时间必须晚于开始时间')
     }
+
+    // 转换时间格式
+  submitData.start_time = dateTimeLocalToBackend(submitData.start_time)
+  submitData.end_time = dateTimeLocalToBackend(submitData.end_time)
 
     // 移除id字段（如果是创建）
     const id = submitData.id
@@ -709,11 +767,27 @@ const handleSubmit = async () => {
     submitData.event_type = parseInt(submitData.event_type)
 
     if (isEditing.value) {
-      // 更新活动
-      await managementAPI.updateManagementEvent(id, submitData)
+      // 更新活动 - 映射字段名
+      const payload = {
+        ...submitData,
+        start_date: submitData.start_time,
+        end_date: submitData.end_time
+      }
+      delete payload.start_time
+      delete payload.end_time
+
+      await managementAPI.updateManagementEvent(id, payload)
     } else {
-      // 创建活动
-      await managementAPI.createManagementEvent(submitData)
+      // 创建活动 - 映射字段名
+      const payload = {
+        ...submitData,
+        start_date: submitData.start_time,
+        end_date: submitData.end_time
+      }
+      delete payload.start_time
+      delete payload.end_time
+
+      await managementAPI.createManagementEvent(payload)
     }
 
     closeModal()

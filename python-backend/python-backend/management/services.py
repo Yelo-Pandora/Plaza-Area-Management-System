@@ -1,5 +1,5 @@
 from .context import EventareaContext, OtherareaContext, EventContext, StoreareaContext, FacilityContext, AdminContext
-from core.models import Admin
+from core.models import Admin, Map
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.exceptions import ValidationError
 
@@ -117,6 +117,17 @@ class EventareaService:
         if 'shape' in data:
             data.pop('shape')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         return EventareaContext.create_eventarea(data)
 
     @staticmethod
@@ -135,6 +146,17 @@ class EventareaService:
         if 'shape' in data:
             data.pop('shape')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         # 如果有其他业务逻辑验证，可以在这里添加
 
         return EventareaContext.update_eventarea(eventarea_id, data)
@@ -143,7 +165,7 @@ class EventareaService:
     def delete_eventarea(eventarea_id):
         """
         删除活动区域
-
+        
         Args:
             eventarea_id: 活动区域ID
         """
@@ -156,6 +178,31 @@ class EventareaService:
             raise ValueError("Cannot delete eventarea with associated events")
 
         return EventareaContext.delete_eventarea(eventarea_id)
+
+    @staticmethod
+    def update_floor(eventarea_id, new_map_id):
+        """
+        更新活动区域的楼层信息
+        
+        Args:
+            eventarea_id: 活动区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        
+        Returns:
+            Eventarea: 更新后的活动区域对象
+        """
+        # 业务逻辑验证
+        # 1. 验证活动区域是否存在
+        EventareaContext.get_eventarea_by_id(eventarea_id)
+        
+        # 2. 验证map_id是否有效
+        try:
+            Map.objects.get(id=new_map_id)
+        except Map.DoesNotExist:
+            raise ValueError(f"Invalid map_id: {new_map_id}")
+        
+        # 3. 调用数据访问层更新楼层信息
+        return EventareaContext.update_floor(eventarea_id, new_map_id)
 
 
 class OtherareaService:
@@ -216,6 +263,17 @@ class OtherareaService:
         if 'shape' in data:
             data.pop('shape')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active', 'is_public']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         return OtherareaContext.create_otherarea(data)
 
     @staticmethod
@@ -234,6 +292,17 @@ class OtherareaService:
         if 'shape' in data:
             data.pop('shape')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active', 'is_public']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         # 如果有其他业务逻辑验证，可以在这里添加
 
         return OtherareaContext.update_otherarea(otherarea_id, data)
@@ -242,7 +311,7 @@ class OtherareaService:
     def delete_otherarea(otherarea_id):
         """
         删除其他区域
-
+        
         Args:
             otherarea_id: 其他区域ID
         """
@@ -253,6 +322,31 @@ class OtherareaService:
         # 2. 可以添加其他验证逻辑
 
         return OtherareaContext.delete_otherarea(otherarea_id)
+
+    @staticmethod
+    def update_floor(otherarea_id, new_map_id):
+        """
+        更新其他区域的楼层信息
+        
+        Args:
+            otherarea_id: 其他区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        
+        Returns:
+            Otherarea: 更新后的其他区域对象
+        """
+        # 业务逻辑验证
+        # 1. 验证其他区域是否存在
+        OtherareaContext.get_otherarea_by_id(otherarea_id)
+        
+        # 2. 验证map_id是否有效
+        try:
+            Map.objects.get(id=new_map_id)
+        except Map.DoesNotExist:
+            raise ValueError(f"Invalid map_id: {new_map_id}")
+        
+        # 3. 调用数据访问层更新楼层信息
+        return OtherareaContext.update_floor(otherarea_id, new_map_id)
 
 
 class EventService:
@@ -384,6 +478,17 @@ class StoreareaService:
         if 'shape' in data:
             del data['shape']
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         # 业务逻辑验证
         # 这里可以添加更多的业务逻辑验证
 
@@ -405,6 +510,17 @@ class StoreareaService:
         if 'shape' in data:
             del data['shape']
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         # 业务逻辑验证
         # 这里可以添加更多的业务逻辑验证
 
@@ -419,6 +535,31 @@ class StoreareaService:
             storearea_id: 店铺区域ID
         """
         StoreareaContext.delete_storearea(storearea_id)
+
+    @staticmethod
+    def update_floor(storearea_id, new_map_id):
+        """
+        更新店铺区域的楼层信息
+        
+        Args:
+            storearea_id: 店铺区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        
+        Returns:
+            Storearea: 更新后的店铺区域对象
+        """
+        # 业务逻辑验证
+        # 1. 验证店铺区域是否存在
+        StoreareaContext.get_storearea_by_id(storearea_id)
+        
+        # 2. 验证map_id是否有效
+        try:
+            Map.objects.get(id=new_map_id)
+        except Map.DoesNotExist:
+            raise ValueError(f"Invalid map_id: {new_map_id}")
+        
+        # 3. 调用数据访问层更新楼层信息
+        return StoreareaContext.update_floor(storearea_id, new_map_id)
 
 
 class FacilityService:
@@ -477,6 +618,17 @@ class FacilityService:
         if 'location' in data:
             data.pop('location')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         return FacilityContext.create_facility(data)
 
     @staticmethod
@@ -495,6 +647,17 @@ class FacilityService:
         if 'location' in data:
             data.pop('location')
 
+        # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
+        boolean_fields = ['is_active']
+        for field in boolean_fields:
+            if field in data:
+                value = data[field]
+                if isinstance(value, str):
+                    if value.lower() == 'true':
+                        data[field] = True
+                    elif value.lower() == 'false':
+                        data[field] = False
+
         # 如果有其他业务逻辑验证，可以在这里添加
 
         return FacilityContext.update_facility(facility_id, data)
@@ -502,6 +665,8 @@ class FacilityService:
     @staticmethod
     def delete_facility(facility_id):
         """
+
+
         删除设施
         
         Args:
@@ -514,3 +679,28 @@ class FacilityService:
         # 2. 可以添加其他验证逻辑
 
         return FacilityContext.delete_facility(facility_id)
+
+    @staticmethod
+    def update_floor(facility_id, new_map_id):
+        """
+        更新设施的楼层信息
+        
+        Args:
+            facility_id: 设施ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        
+        Returns:
+            Facility: 更新后的设施对象
+        """
+        # 业务逻辑验证
+        # 1. 验证设施是否存在
+        FacilityContext.get_facility_by_id(facility_id)
+        
+        # 2. 验证map_id是否有效
+        try:
+            Map.objects.get(id=new_map_id)
+        except Map.DoesNotExist:
+            raise ValueError(f"Invalid map_id: {new_map_id}")
+        
+        # 3. 调用数据访问层更新楼层信息
+        return FacilityContext.update_floor(facility_id, new_map_id)

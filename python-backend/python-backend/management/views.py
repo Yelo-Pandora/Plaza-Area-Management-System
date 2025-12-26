@@ -1,5 +1,6 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from .serializers import get_eventarea_serializer, get_otherarea_serializer, get_event_serializer, get_storearea_serializer, get_facility_serializer
 from .services import EventareaService, OtherareaService, EventService, StoreareaService, FacilityService
@@ -60,16 +61,21 @@ class EventareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def update(self, request, pk=None):
-        """完整更新活动区域（不包括shape）"""
+        """
+        完整更新活动区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            eventarea = EventareaService.update_eventarea(pk, request.data)
+            eventarea = EventareaService.update_eventarea(pk, data)
             serializer = self.get_serializer(eventarea)
             return Response(serializer.data)
         except ValueError as e:
@@ -78,16 +84,21 @@ class EventareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def partial_update(self, request, pk=None):
-        """部分更新活动区域（不包括shape）"""
+        """
+        部分更新活动区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            eventarea = EventareaService.update_eventarea(pk, request.data)
+            eventarea = EventareaService.update_eventarea(pk, data)
             serializer = self.get_serializer(eventarea)
             return Response(serializer.data)
         except ValueError as e:
@@ -96,10 +107,52 @@ class EventareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def destroy(self, request, pk=None):
-        """删除指定活动区域"""
+        """
+        删除指定活动区域
+        """
         try:
             EventareaService.delete_eventarea(pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['patch'], url_path='update-floor')
+    def update_floor(self, request, pk=None):
+        """
+        更新活动区域的楼层信息
+        
+        Args:
+            request: 请求对象，可以包含map_id参数和其他活动区域属性
+            pk: 活动区域ID
+        
+        Returns:
+            Response: 更新后的活动区域信息
+        """
+        try:
+            updated_data = request.data.copy()
+            
+            # 如果包含map_id，则更新楼层信息
+            if 'map_id' in updated_data:
+                new_map_id = updated_data.pop('map_id')
+                EventareaService.update_floor(pk, new_map_id)
+            
+            # 如果还有其他属性，则更新这些属性
+            if updated_data:
+                # 检查是否包含shape属性，如果包含则返回错误
+                if 'shape' in updated_data:
+                    return Response(
+                        {'error': 'Shape attribute cannot be updated in management module'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                EventareaService.update_eventarea(pk, updated_data)
+            
+            # 获取更新后的活动区域
+            eventarea = get_object_or_404(EventareaService.get_all_eventareas(), pk=pk)
+            serializer = self.get_serializer(eventarea)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -161,16 +214,21 @@ class OtherareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def update(self, request, pk=None):
-        """完整更新其他区域（不包括shape）"""
+        """
+        完整更新其他区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            otherarea = OtherareaService.update_otherarea(pk, request.data)
+            otherarea = OtherareaService.update_otherarea(pk, data)
             serializer = self.get_serializer(otherarea)
             return Response(serializer.data)
         except ValueError as e:
@@ -179,16 +237,21 @@ class OtherareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def partial_update(self, request, pk=None):
-        """部分更新其他区域（不包括shape）"""
+        """
+        部分更新其他区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            otherarea = OtherareaService.update_otherarea(pk, request.data)
+            otherarea = OtherareaService.update_otherarea(pk, data)
             serializer = self.get_serializer(otherarea)
             return Response(serializer.data)
         except ValueError as e:
@@ -197,10 +260,52 @@ class OtherareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def destroy(self, request, pk=None):
-        """删除指定其他区域"""
+        """
+        删除指定其他区域
+        """
         try:
             OtherareaService.delete_otherarea(pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['patch'], url_path='update-floor')
+    def update_floor(self, request, pk=None):
+        """
+        更新其他区域的楼层信息
+        
+        Args:
+            request: 请求对象，可以包含map_id参数和其他其他区域属性
+            pk: 其他区域ID
+        
+        Returns:
+            Response: 更新后的其他区域信息
+        """
+        try:
+            updated_data = request.data.copy()
+            
+            # 如果包含map_id，则更新楼层信息
+            if 'map_id' in updated_data:
+                new_map_id = updated_data.pop('map_id')
+                OtherareaService.update_floor(pk, new_map_id)
+            
+            # 如果还有其他属性，则更新这些属性
+            if updated_data:
+                # 检查是否包含shape属性，如果包含则返回错误
+                if 'shape' in updated_data:
+                    return Response(
+                        {'error': 'Shape attribute cannot be updated in management module'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                OtherareaService.update_otherarea(pk, updated_data)
+            
+            # 获取更新后的其他区域
+            otherarea = get_object_or_404(OtherareaService.get_all_otherareas(), pk=pk)
+            serializer = self.get_serializer(otherarea)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -337,16 +442,21 @@ class StoreareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def update(self, request, pk=None):
-        """完整更新店铺区域（不包括shape）"""
+        """
+        完整更新店铺区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            storearea = StoreareaService.update_storearea(pk, request.data)
+            storearea = StoreareaService.update_storearea(pk, data)
             serializer = self.get_serializer(storearea)
             return Response(serializer.data)
         except ValueError as e:
@@ -355,16 +465,21 @@ class StoreareaViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def partial_update(self, request, pk=None):
-        """部分更新店铺区域（不包括shape）"""
+        """
+        部分更新店铺区域（不包括shape）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含shape属性，如果包含则返回错误
-            if 'shape' in request.data:
+            if 'shape' in data:
                 return Response(
                     {'error': 'Shape attribute cannot be updated in management module'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            storearea = StoreareaService.update_storearea(pk, request.data)
+            storearea = StoreareaService.update_storearea(pk, data)
             serializer = self.get_serializer(storearea)
             return Response(serializer.data)
         except ValueError as e:
@@ -379,6 +494,46 @@ class StoreareaViewSet(viewsets.ModelViewSet):
         try:
             StoreareaService.delete_storearea(pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['patch'], url_path='update-floor')
+    def update_floor(self, request, pk=None):
+        """
+        更新店铺区域的楼层信息
+        
+        Args:
+            request: 请求对象，可以包含map_id参数和其他店铺区域属性
+            pk: 店铺区域ID
+        
+        Returns:
+            Response: 更新后的店铺区域信息
+        """
+        try:
+            updated_data = request.data.copy()
+            
+            # 如果包含map_id，则更新楼层信息
+            if 'map_id' in updated_data:
+                new_map_id = updated_data.pop('map_id')
+                StoreareaService.update_floor(pk, new_map_id)
+            
+            # 如果还有其他属性，则更新这些属性
+            if updated_data:
+                # 检查是否包含shape属性，如果包含则返回错误
+                if 'shape' in updated_data:
+                    return Response(
+                        {'error': 'Shape attribute cannot be updated in management module'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                StoreareaService.update_storearea(pk, updated_data)
+            
+            # 获取更新后的店铺区域
+            storearea = get_object_or_404(StoreareaService.get_all_storeareas(), pk=pk)
+            serializer = self.get_serializer(storearea)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -440,16 +595,21 @@ class FacilityViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def update(self, request, pk=None):
-        """完整更新设施（不包括location）"""
+        """
+        完整更新设施（不包括location）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含location属性，如果包含则返回错误
-            if 'location' in request.data:
+            if 'location' in data:
                 return Response(
                     {'error': 'Location attribute cannot be updated in management module'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            facility = FacilityService.update_facility(pk, request.data)
+            facility = FacilityService.update_facility(pk, data)
             serializer = self.get_serializer(facility)
             return Response(serializer.data)
         except ValueError as e:
@@ -458,16 +618,21 @@ class FacilityViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def partial_update(self, request, pk=None):
-        """部分更新设施（不包括location）"""
+        """
+        部分更新设施（不包括location）
+        """
         try:
+            # 创建request.data的可变副本
+            data = request.data.copy()
+            
             # 检查是否包含location属性，如果包含则返回错误
-            if 'location' in request.data:
+            if 'location' in data:
                 return Response(
                     {'error': 'Location attribute cannot be updated in management module'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            facility = FacilityService.update_facility(pk, request.data)
+            facility = FacilityService.update_facility(pk, data)
             serializer = self.get_serializer(facility)
             return Response(serializer.data)
         except ValueError as e:
@@ -476,10 +641,52 @@ class FacilityViewSet(viewsets.ModelViewSet):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def destroy(self, request, pk=None):
-        """删除指定设施"""
+        """
+        删除指定设施
+        """
         try:
             FacilityService.delete_facility(pk)
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['patch'], url_path='update-floor')
+    def update_floor(self, request, pk=None):
+        """
+        更新设施的楼层信息
+        
+        Args:
+            request: 请求对象，可以包含map_id参数和其他设施属性
+            pk: 设施ID
+        
+        Returns:
+            Response: 更新后的设施信息
+        """
+        try:
+            updated_data = request.data.copy()
+            
+            # 如果包含map_id，则更新楼层信息
+            if 'map_id' in updated_data:
+                new_map_id = updated_data.pop('map_id')
+                FacilityService.update_floor(pk, new_map_id)
+            
+            # 如果还有其他属性，则更新这些属性
+            if updated_data:
+                # 检查是否包含location属性，如果包含则返回错误
+                if 'location' in updated_data:
+                    return Response(
+                        {'error': 'Location attribute cannot be updated in management module'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                FacilityService.update_facility(pk, updated_data)
+            
+            # 获取更新后的设施
+            facility = get_object_or_404(FacilityService.get_all_facilities(), pk=pk)
+            serializer = self.get_serializer(facility)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
