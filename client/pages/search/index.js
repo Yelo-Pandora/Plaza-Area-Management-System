@@ -3,18 +3,20 @@ const util = require('../../utils/util')
 Page({
   data: {
     keyword: '',
-    storeResults: [], 
-    eventResults: [], 
+    storeResults: [],
+    eventResults: [],
     searchTypes: ["全部", "活动", "商铺"],
     typeIndex: 0,
     hasSearched: false, // 标记是否执行过搜索动作
     placeholderList: ['搜索商铺或者活动名称', '请输入活动名称', '请输入商铺名称'],
-     // 弹窗相关状态
+    // 弹窗相关状态
     showModal: false,
     modalType: '', // 'store' 或 'event'
     modalDetail: null,
     modalLoading: false,
-    modalRelatedAreas: [], // 仅用于活动详情时展示关联区域
+    modalRelatedStoreareas: [], // 活动详情，存放关联的商铺区域详情
+    modalRelatedEventareas: [], // 活动详情，存放关联的活动区域详情
+    modalRelatedEvents: [], // 商铺详情，存放商铺关联的活动列表
     // 商铺种类映射关系
     storeTypeMap: {
       '0': '其他',
@@ -23,6 +25,14 @@ Page({
       '3': '服装',
       '4': '游戏',
       '5': '玩具'
+    },
+    eventTypeMap: {
+      '0': '其他',
+      '1': '促销活动',
+      '2': '品牌活动',
+      '3': '主题活动',
+      '4': '会员活动',
+      '5': '新品发布'
     },
   },
 
@@ -85,6 +95,39 @@ Page({
     };
   },
 
+  // 规范化活动对象
+  normalizeEvent(raw) {
+    if (!raw) return null;
+    const ev = Object.assign({}, raw);
+    ev.id = ev.id || ev.event_id;
+    ev.event_name = ev.event_name || ev.name;
+    ev.is_active = this.parseBool(ev.is_active !== undefined ? ev.is_active : ev.isActive);
+    ev.start_date = this.formatDateStr(ev.start_date || ev.start);
+    ev.end_date = this.formatDateStr(ev.end_date || ev.end);
+    return ev;
+  },
+
+  // 为活动填充种类 Label
+  async fillEventLabel(ev) {
+    if (!ev || !ev.id) return ev;
+    try {
+      // 额外请求一次关联区域 ID
+      const res = await util.apiRequest(`/search/event/${ev.id}/areas/`);
+      const eventareaIds = res.eventarea_ids || [];
+      if (eventareaIds.length > 0) {
+        // 请求第一个活动区域的详情来获取 type
+        const areaDetail = await util.apiRequest(`/search/eventarea/${eventareaIds[0]}/`);
+        const typeCode = areaDetail.type || 0;
+        ev.area_type_label = this.data.eventTypeMap[String(typeCode)] || '其他';
+      } else {
+        ev.area_type_label = '其他';
+      }
+    } catch (e) {
+      ev.area_type_label = '其他';
+    }
+    return ev;
+  },
+
   // 切换搜索类型
   bindTypeChange(e) {
     this.setData({
@@ -98,64 +141,59 @@ Page({
     this.setData({ hasSearched: false }) // 用户一旦开始输入，标记为未执行搜索
   },
 
-async doSearch() {
+  async doSearch() {
     const kw = (this.data.keyword || '').trim()
     if (!kw) return
 
     const currentType = this.data.searchTypes[this.data.typeIndex]
-    
+
     // 1. 初始化状态
-    this.setData({ 
-      storeResults: [], 
+    this.setData({
+      storeResults: [],
       eventResults: [],
       hasSearched: false // 搜索开始前先重置标记
     })
     wx.showLoading({ title: '搜索中...' })
 
-    // 用于存放异步任务的数组
-    const tasks = []
-
-    // 2. 根据选中的类型决定调用哪些接口
-    if (currentType === '全部' || currentType === '商铺') {
-      const storeTask = util.apiRequest(`/search/storearea/search/?name=${encodeURIComponent(kw)}`)
-        .then(res => {
-          this.setData({ storeResults: res || [] })
-        })
-        .catch(err => {
-          console.error('搜索商铺失败', err)
-        })
-      tasks.push(storeTask)
-    }
-
-    if (currentType === '全部' || currentType === '活动') {
-      const eventTask = util.apiRequest(`/search/event/search/?name=${encodeURIComponent(kw)}`)
-        .then(res => {
-          this.setData({ eventResults: res || [] })
-        })
-        .catch(err => {
-          console.error('搜索活动失败', err)
-        })
-      tasks.push(eventTask)
-    }
-
-    // 3. 等待所有已发出的请求完成
     try {
-      await Promise.all(tasks)
+      // 用于存放异步任务的列表
+      const tasks = [];
+      // 搜索商铺
+      if (currentType === '全部' || currentType === '商铺') {
+        tasks.push(util.apiRequest(`/search/storearea/search/?name=${encodeURIComponent(kw)}`).then(res => {
+          this.setData({ storeResults: res || [] });
+        }));
+      }
+
+      // 搜索活动
+      if (currentType === '全部' || currentType === '活动') {
+        tasks.push(util.apiRequest(`/search/event/search/?name=${encodeURIComponent(kw)}`).then(async res => {
+          let list = res || [];
+          // 重点：对搜索结果中的每个活动进行分类补全
+          const processedList = await Promise.all(list.map(async it => {
+            const normalized = this.normalizeEvent(it);
+            return await this.fillEventLabel(normalized);
+          }));
+          this.setData({ eventResults: processedList });
+        }));
+      }
+
+      await Promise.all(tasks);
     } catch (e) {
-      console.error('搜索过程出现错误', e)
+      console.error('搜索失败', e);
     } finally {
-      wx.hideLoading()
-      this.setData({ hasSearched: true })
+      wx.hideLoading();
+      this.setData({ hasSearched: true });
     }
   },
 
   // 弹窗逻辑
   // 打开商铺详情
-  openStore(e) {
+   async openStore(e) {
     const id = e.currentTarget.dataset.id;
     const item = this.data.storeResults.find(x => x.id === id);
     if (!item) return;
-    // 计算营业状态
+
     const status = this.getBusinessStatus(item.open_time, item.close_time);
     item.statusLabel = status.label;
     item.isOpen = status.isOpen;
@@ -164,45 +202,69 @@ async doSearch() {
       showModal: true,
       modalType: 'store',
       modalDetail: item,
-      modalLoading: false
+      modalLoading: true,
+      modalRelatedEvents: []
     });
+
+    try {
+      const res = await util.apiRequest(`/search/storearea/${id}/events/`);
+      const eventIds = res.event_ids || [];
+      const eventFetches = eventIds.map(async eid => {
+        const rawEvent = await util.apiRequest(`/search/event/${eid}/`).catch(() => null);
+        if (rawEvent) {
+          const normalized = this.normalizeEvent(rawEvent);
+          return await this.fillEventLabel(normalized);
+        }
+        return null;
+      });
+      const results = await Promise.all(eventFetches);
+      this.setData({
+        modalRelatedEvents: results.filter(r => r !== null),
+        modalLoading: false
+      });
+    } catch (err) {
+      this.setData({ modalLoading: false });
+    }
   },
 
   // 打开活动详情
-  openEvent(e) {
+  async openEvent(e) {
     const id = e.currentTarget.dataset.id;
-    const item = this.data.eventResults.find(x => x.id === id);
+    let item = this.data.eventResults.find(x => x.id === id);
     if (!item) return;
+
+    // 再次确认补全分类信息
+    if (!item.area_type_label) {
+      item = await this.fillEventLabel(item);
+    }
 
     this.setData({
       showModal: true,
       modalType: 'event',
       modalDetail: item,
       modalLoading: true,
-      modalRelatedAreas: []
+      modalRelatedStoreareas: [],
+      modalRelatedEventareas: []
     });
 
-    // 获取活动关联的区域列表
-    util.apiRequest(`/search/event/${id}/areas/`).then(res => {
+    try {
+      const res = await util.apiRequest(`/search/event/${id}/areas/`);
       const storeIds = res.storearea_ids || [];
-      const eventareaIds = res.eventarea_ids || [];
-      const allIds = [...storeIds.map(i => ({id: i, type: 'store'})), ...eventareaIds.map(i => ({id: i, type: 'event'}))];
-      
-      const fetches = allIds.map(obj => {
-        const url = obj.type === 'store' ? `/search/storearea/${obj.id}/` : `/search/eventarea/${obj.id}/`;
-        return util.apiRequest(url).catch(() => null);
-      });
+      const eventIds = res.eventarea_ids || [];
 
-      return Promise.all(fetches);
-    }).then(results => {
+      const [stores, eventAreas] = await Promise.all([
+        Promise.all(storeIds.map(sid => util.apiRequest(`/search/storearea/${sid}/`).catch(() => null))),
+        Promise.all(eventIds.map(eid => util.apiRequest(`/search/eventarea/${eid}/`).catch(() => null)))
+      ]);
+
       this.setData({
-        modalRelatedAreas: results.filter(r => r !== null),
+        modalRelatedStoreareas: stores.filter(r => r !== null),
+        modalRelatedEventareas: eventAreas.filter(r => r !== null),
         modalLoading: false
       });
-    }).catch(err => {
-      console.error('加载关联详情失败', err);
+    } catch (err) {
       this.setData({ modalLoading: false });
-    });
+    }
   },
 
   closeModal() {

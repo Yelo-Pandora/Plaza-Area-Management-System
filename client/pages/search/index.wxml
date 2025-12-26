@@ -63,7 +63,7 @@
   	</view>
 
 	<!-- 详情弹窗 -->
-	<view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal">
+	<view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal" catchtouchmove="true">
 		<view class="modal-content" catchtap="none">
 			<view class="modal-header">
 				<text class="modal-title">{{modalType === 'store' ? '商铺详情' : '活动详情'}}</text>
@@ -135,35 +135,113 @@
 						>
 							<text >在地图中查看</text>
 						</view>
+						<!-- 关联活动列表 -->
+						<view class="sub-section" wx:if="{{modalRelatedEvents.length > 0}}">
+							<view class="sub-title">关联活动列表</view>
+							<view class="mini-card" wx:for="{{modalRelatedEvents}}" wx:key="id">
+								<view class="detail-row">
+									<view class="event-name-large">{{item.event_name}}</view>
+								</view>
+								<view class="detail-row">
+									<view class="event-type-tag">
+										<!-- 严格照抄：activities/index.wxml的处理方法 area_type_label -->
+										{{item.area_type_label || '其他'}}
+									</view>
+									<view class="status-tag {{item.is_active ? 'is-open' : 'is-closed'}}">
+										{{item.is_active ? '可参与' : '已暂停'}}
+									</view>
+								</view>
+								<view class="detail-row">
+									<text class="value">{{item.description || '暂无简介'}}</text>
+								</view>
+								<view class="detail-row">
+									<text class="label">活动周期：</text>
+									<text class="value">{{item.start_date}} 开始\n{{item.end_date}} 结束</text>
+								</view>
+							</view>
+						</view>
 					</view>
 
 					<!-- 活动详情视图 -->
 					<view wx:if="{{modalType === 'event'}}">
+						<!-- 左侧图片，右侧名称与种类 -->
+						<view class="event-main-header">
+							<!-- 活动图片：设置 mode="aspectFill" 确保正方形裁剪填充 -->
+							<image 
+								class="event-main-image" 
+								src="{{modalDetail.image_url || '/images/default-event.png'}}" 
+								mode="aspectFill"
+							/>
+							<view class="event-header-text">
+								<view class="event-name-large">{{modalDetail.event_name}}</view>
+								<view class="event-tags">
+									<view class="event-type-tag">
+										<!-- 严格照抄：activities/index.wxml的处理方法 area_type_label -->
+										{{modalDetail.area_type_label || '其他'}}
+									</view>
+									<view class="status-tag {{modalDetail.is_active ? 'is-open' : 'is-closed'}}">
+										{{modalDetail.is_active ? '可参与' : '已暂停'}}
+									</view>
+								</view>
+							</view>
+						</view>
+						<!-- 分割线 -->
+						<view class="modal-divider"></view>
+						<!-- 其他详细信息列表 -->
 						<view class="detail-row">
-							<text class="label">活动名称：</text>
-							<text class="value">{{modalDetail.event_name}}</text>
+							<text class="label">活动简介：</text>
+							<text class="value">{{modalDetail.description || '暂无简介'}}</text>
 						</view>
 						<view class="detail-row">
 							<text class="label">活动周期：</text>
-							<text class="value">{{modalDetail.start_date}} \n {{modalDetail.end_date}}</text>
+							<text class="value">{{modalDetail.start_date}} 开始\n{{modalDetail.end_date}} 结束</text>
 						</view>
-						
-						<!-- TODO: 关联区域列表还未实现完善 -->
-						<view class="sub-section" wx:if="{{modalRelatedAreas.length > 0}}">
+						<!-- 关联区域列表 -->
+						<view class="sub-section" wx:if="{{modalRelatedStoreareas.length > 0 || modalRelatedEventareas.length > 0}}">
 							<view class="sub-title">关联区域列表</view>
-							<view class="mini-card" wx:for="{{modalRelatedAreas}}" wx:key="id">
-								关联区域信息
-								<!-- <text>{{item.store_name || item.name}}</text>
-								<text class="tag">{{modal_type === 'store' ? '商铺活动' : '区域活动'}}</text> -->
+							<!-- 循环显示商铺区域 -->
+							<view class="mini-card" wx:for="{{modalRelatedStoreareas}}" wx:key="id">
+								<view class="detail-row">
+									<view class="store-name-large">{{item.store_name}}</view>
+								</view>
+								<view class="detail-row">
+									<text class="value">{{item.description || '暂无简介'}}</text>
+								</view>
+								<view class="detail-row">
+									<text class="label">店主：</text>
+									<text class="value">{{item.owner_name}}</text>
+								</view>
+								<view class="detail-row">
+									<text class="label">联系方式：</text>
+									<text class="value">{{item.owner_phone}}</text>
+								</view>
+								<view class="detail-row">
+									<text class="label">营业时间：</text>
+									<text class="value">{{item.open_time}} - {{item.close_time}}</text>
+								</view>
+							</view>
+							<!-- 循环显示活动区域 -->
+							<view class="mini-card" wx:for="{{modalRelatedEventareas}}" wx:key="id">
+								<view class="detail-row">
+									<view class="eventarea-name-large">活动区域</view>
+								</view>
+								<view class="detail-row">
+									<view class="value">{{item.description || '-'}}</view>
+								</view>
+								<view class="detail-row">
+									<text class="label">负责人：</text>
+									<text class="value">{{item.organizer_name}}</text>
+								</view>
+								<view class="detail-row">
+									<text class="label">联系方式：</text>
+									<text class="value">{{item.organizer_phone}}</text>
+								</view>
 							</view>
 						</view>
 					</view>
 				</block>
 			</scroll-view>
 
-			<!-- <view class="modal-footer">
-				<view class="btn" bindtap="closeModal">关闭</view>
-			</view> -->
 		</view>
 	</view>
 </view>
