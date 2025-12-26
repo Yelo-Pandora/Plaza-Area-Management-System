@@ -8,7 +8,7 @@
     </div>
 
     <div class="layer-groups">
-      <!-- 1. 店铺区域 -->
+      <!-- 1. 店铺区域 (保持不变) -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('storearea')">
           <span class="layer-icon">🏪</span>
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- 2. 活动区域 -->
+      <!-- 2. 活动区域 (修改显示逻辑) -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('eventarea')">
           <span class="layer-icon">🎪</span>
@@ -47,12 +47,13 @@
             :class="['layer-item', { selected: isSelected('eventarea', area.id) }]"
             @click="handleSelect('eventarea', area)"
           >
-            <span class="layer-item-name">{{ area.event_name || '未命名' }}</span>
+            <!-- 使用 getEventAreaDisplay -->
+            <span class="layer-item-name">{{ getEventAreaDisplay(area) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- 3. 其他区域 -->
+      <!-- 3. 其他区域 (修改显示逻辑) -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('otherarea')">
           <span class="layer-icon">🏢</span>
@@ -69,12 +70,13 @@
             :class="['layer-item', { selected: isSelected('otherarea', area.id) }]"
             @click="handleSelect('otherarea', area)"
           >
-            <span class="layer-item-name">{{ area.name || '未命名' }}</span>
+            <!-- 使用 getOtherAreaDisplay -->
+            <span class="layer-item-name">{{ getOtherAreaDisplay(area) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- 4. 设施 -->
+      <!-- 4. 设施 (保持不变) -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('facility')">
           <span class="layer-icon">🚻</span>
@@ -103,7 +105,10 @@
 import { useSidebarLogic } from './Sidebar.js'
 const {
   storeareas, eventareas, otherareas, facilities,
-  expandedLayers, toggleLayer, handleSelect, isSelected
+  expandedLayers, toggleLayer, handleSelect, isSelected,
+  // 引入新函数
+  getEventAreaDisplay,
+  getOtherAreaDisplay
 } = useSidebarLogic()
 
 defineEmits(['open-create'])
