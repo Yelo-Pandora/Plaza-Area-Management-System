@@ -432,7 +432,9 @@ export function useCanvasLogic(stageContainerRef) {
   watchPostEffect(() => {
     const isReady = currentMap.value && stageContainerRef.value && !loading.value
     if (isReady) {
-      if (!stage || (stage && stage.attrs.mapId !== currentMap.value.id)) {
+      const isStageValid = stage && stage.container() === stageContainerRef.value
+
+      if (!isStageValid || stage.attrs.mapId !== currentMap.value.id){
         initKonva()
         if (stage) stage.attrs.mapId = currentMap.value.id
       } else {

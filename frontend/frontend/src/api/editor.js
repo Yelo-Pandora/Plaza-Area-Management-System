@@ -164,3 +164,6 @@ export function updateEditorFacilityLocation(id, locationGeojson) {
   })
 }
 
+export function deleteEditorFacility(id) {
+  return request(`api/editor/facility/${id}/`, { method: 'DELETE' })
+}

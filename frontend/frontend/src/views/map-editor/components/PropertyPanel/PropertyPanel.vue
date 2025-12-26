@@ -19,6 +19,7 @@
           <input type="text" :value="selectedFeature.id" class="form-input" disabled>
         </div>
 
+        <!-- ... (中间的表单项保持不变) ... -->
         <div class="form-group">
           <label class="form-label">名称</label>
           <input
@@ -32,32 +33,26 @@
         <div class="form-group">
           <label class="form-label">类型</label>
           <select v-model="form.type" class="form-select">
-            <!-- 店铺类型 -->
-            <template v-if="selectedType === 'storearea'">
+             <!-- ... options 保持不变 ... -->
+             <template v-if="selectedType === 'storearea'">
               <option value="0">普通店铺</option>
               <option value="1">餐饮</option>
               <option value="2">服饰</option>
               <option value="3">娱乐</option>
               <option value="4">服务</option>
             </template>
-
-            <!-- 活动区域类型 -->
             <template v-if="selectedType === 'eventarea'">
               <option value="0">普通活动区域</option>
               <option value="1">促销活动</option>
               <option value="2">展览活动</option>
               <option value="3">表演活动</option>
             </template>
-
-            <!-- 其他区域类型 -->
             <template v-if="selectedType === 'otherarea'">
               <option value="0">公共区域</option>
               <option value="1">办公区域</option>
               <option value="2">设备区域</option>
               <option value="3">其他</option>
             </template>
-
-            <!-- 设施类型 -->
             <template v-if="selectedType === 'facility'">
               <option value="0">电梯</option>
               <option value="1">卫生间</option>
@@ -94,10 +89,26 @@
           </div>
         </div>
 
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary" :disabled="submitting">
+        <!-- 修改这里：操作按钮区域 -->
+        <div class="form-actions space-between">
+          <!-- 左侧放删除按钮 -->
+          <button
+            type="button"
+            class="btn btn-danger"
+            @click="handleDelete"
+            :disabled="submitting || isDeleting"
+          >
+            删除
+          </button>
+
+          <!-- 右侧放保存按钮 -->
+          <button
+            type="submit"
+            class="btn btn-primary"
+            :disabled="submitting || isDeleting"
+          >
             <span v-if="submitting" class="btn-spinner"></span>
-            保存
+            保存属性
           </button>
         </div>
       </form>
@@ -107,7 +118,8 @@
 
 <script setup>
 import { usePropertiesLogic } from './PropertyPanel.js'
-const { form, selectedFeature, selectedType, save, submitting, errorMessage, getTypeName } = usePropertiesLogic()
+// 确保解构出了 handleDelete 和 isDeleting
+const { form, selectedFeature, selectedType, save, handleDelete, submitting, isDeleting, errorMessage, getTypeName } = usePropertiesLogic()
 </script>
 
 <style scoped src="./PropertyPanel.css"></style>
