@@ -1,5 +1,29 @@
 const util = require('../../utils/util')
 
+const FACILITY_TYPE_MAP = {
+  1: '电动扶梯',
+  2: '灭火器',
+  3: '安全出口',
+  4: '服务台',
+  5: '其他',
+}
+
+const FACILITY_ICON_MAP = {
+  1: '/images/facility/escalator.png',
+  2: '/images/facility/fire_extinguisher.png',
+  3: '/images/facility/exit.png',
+  4: '/images/facility/info.png',
+  5: '/images/facility/other.png',
+}
+
+const FACILITY_ICON_BASE_COLOR = {
+  1: 'rgba(24,144,255,0.95)',   // 蓝
+  2: 'rgba(220,38,38,0.95)',    // 红
+  3: 'rgba(34,197,94,0.95)',    // 绿
+  4: 'rgba(245,158,11,0.95)',   // 黄
+  5: 'rgba(255,120,40,0.95)',   // 橙
+}
+
 Page({
   data: {
     maps: [],
@@ -406,15 +430,8 @@ Page({
         ctx.fill()
         ctx.stroke()
       })
-      // polygons.forEach(poly => {
-      //   poly.forEach(ring => ring.forEach((pt, i) => {
-      //     const [cx, cy] = toCanvas(pt[0], pt[1])
-      //     if (i === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy)
-      //   }))
-      //   ctx.closePath(); ctx.fill(); ctx.stroke()
-      // })
 
-      // 绘制区域颜色
+      // 绘制区域
       const regions = []
       const pushRegion = (list, color, kind) => {
         (list || []).forEach(it => {
@@ -437,51 +454,67 @@ Page({
         ctx.closePath(); ctx.fill()
       })
 
-      // --- 区域名称绘制逻辑 ---
-      if (this.data.scale > 2.4) {
-        // 1. 设置文字全局样式
-        ctx.setFontSize(10); 
-        ctx.setFillStyle('#333333'); // 文字颜色
-        ctx.setTextAlign('center');
-        ctx.setTextBaseline('middle');
+      const showLabels = this.data.scale > 2.4
 
+      // 区域名称
+      if (showLabels) {
+        ctx.setFontSize(10); ctx.setFillStyle('#000000'); ctx.setTextAlign('center'); ctx.setTextBaseline('middle');
         regions.forEach(r => {
           const meta = r.meta;
-          // 获取预计算好的中心点地理坐标
           if (meta && meta._center) {
             let name = ''
-            // 获取名称
             if (r.kind === 'storearea') name = meta.store_name;
             else if (r.kind === 'eventarea') name = this.data.eventareaTypeMap[meta.type];
             else if (r.kind === 'otherarea') name = this.data.otherareaTypeMap[meta.type];
             if (name) {
-              // 将地理中心点转换为当前画布的像素坐标
               const [tx, ty] = toCanvas(meta._center.x, meta._center.y);
-              // 执行绘制
-              ctx.fillText(name, tx, ty);
+              ctx.setShadow(0, 0, 2, 'white'); ctx.fillText(name, tx, ty); ctx.setShadow(0, 0, 0, 'transparent');
             }
           }
         });
       }
 
-      // 设施标记绘制逻辑
+      // 绘制设施图片
       const facilities = (map.raw.facilities || []).filter(f => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'))
-      ctx.setFillStyle('rgba(255,120,40,0.95)')
       facilities.forEach(f => {
         try {
           const coords = f.geometry.type === 'Point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
           if (!coords) return
           const [cx, cy] = toCanvas(coords[0], coords[1])
-          const rMark = Math.max(1, Math.min(4, Math.round(2 * s)))
-          ctx.beginPath(); ctx.arc(cx, cy, rMark, 0, Math.PI * 2); ctx.fill()
-          // 绘制白色中心
-          ctx.setFillStyle('#fff')
-          ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, Math.round(rMark/2)), 0, Math.PI * 2); ctx.fill()
-          ctx.setFillStyle('rgba(255,120,40,0.95)')
-        } catch (e) {}
+          
+          const norm = this._normalizeRegionForModal(f)
+          const code = (norm && (norm.type_code ?? norm.facility_type ?? norm.type))
+          const num = Number(code)
+          const key = (!Number.isNaN(num) && Number.isFinite(num)) ? num : String(code)
+          
+          const icon = FACILITY_ICON_MAP[key]
+          const baseColor = FACILITY_ICON_BASE_COLOR[key] || 'rgba(255,120,40,0.95)'
+          const iconSize = Math.max(10, Math.min(22, Math.round(10 * this.data.scale)))
+
+          if (icon) {
+            if (typeof ctx.setShadow === 'function') ctx.setShadow(0, 3, 8, 'rgba(0,0,0,0.22)')
+            ctx.setFillStyle(baseColor)
+            ctx.beginPath(); ctx.arc(cx, cy, (iconSize / 2) + 1, 0, Math.PI * 2); ctx.fill()
+            if (typeof ctx.setShadow === 'function') ctx.setShadow(0, 0, 0, 'rgba(0,0,0,0)')
+            ctx.drawImage(icon, cx - iconSize / 2, cy - iconSize / 2, iconSize, iconSize)
+          } else {
+            // 回退到圆点标记
+            ctx.setFillStyle('rgba(255,120,40,0.95)')
+            const rMark = Math.max(1, Math.min(4, Math.round(2 * s)))
+            ctx.beginPath(); ctx.arc(cx, cy, rMark, 0, Math.PI * 2); ctx.fill()
+          }
+
+          if (showLabels) {
+            const label = (norm && (FACILITY_TYPE_MAP[key] || `设施${key}`))
+            if (label) {
+              ctx.setFontSize(11); ctx.setFillStyle('#111'); ctx.setTextAlign('center')
+              ctx.fillText(label, cx, cy - 18)
+            }
+          }
+        } catch (e) { console.error('设施绘制异常', e) }
       })
       
-      // --- 4. 关键：绘制 search 跳转过来的高亮区域 ---
+      // 绘制 search 跳转过来的高亮区域
       if (this.data.targetHighlightRings) {
         // 设置亮色边框样式：亮红色
         ctx.setStrokeStyle('#FF0000'); 
@@ -612,15 +645,33 @@ Page({
   },
 
   _normalizeRegionForModal(raw) {
-    // 数据清洗
-    if (!raw || typeof raw !== 'object') return raw
-    const out = Object.assign({}, raw)
-    out.is_facility = !!(raw.geometry && (raw.geometry.type === 'Point' || raw.geometry.type === 'MultiPoint'))
-    out.is_shop = !!(raw.store_name || raw.__kind === 'storearea')
-    out.is_event = !!(raw.__kind === 'eventarea')
-    out.facility_type = raw.facility_type || raw.type || '公共设施'
-    return out
-  },
+      if (!raw || typeof raw !== 'object') return raw
+      const src = raw.properties || raw.attributes || raw
+      const pick = (keys) => {
+        for (let k of keys) { if (raw[k] !== undefined) return raw[k]; if (src && src[k] !== undefined) return src[k]; }
+        return undefined
+      }
+      const out = Object.assign({}, raw)
+      out.is_facility = !!(raw.geometry && (raw.geometry.type === 'Point' || raw.geometry.type === 'MultiPoint'))
+      out.is_shop = !!(pick(['store_name','name']) || raw.__kind === 'storearea')
+      out.is_event = !!(raw.__kind === 'eventarea')
+      out.facility_type = pick(['facility_type', 'type'])
+      out.type_code = pick(['type_code', 'type_id', 'type'])
+      
+      // 弹窗展示文本
+      if (out.is_facility) {
+        const code = Number(out.type_code)
+        out.type_display = FACILITY_TYPE_MAP[code] || '公共设施'
+      } else if (out.is_shop) {
+        out.type_display = '商铺区域'
+      } else if (out.is_event) {
+        out.type_display = this.data.eventareaTypeMap[out.type] || '活动区域'
+      } else {
+        out.type_display = this.data.otherareaTypeMap[out.type] || '其他区域'
+      }
+      
+      return out
+    },
 
   // 缩放/拖拽逻辑
   onTouchStart(e) {
@@ -665,5 +716,6 @@ Page({
     this.setData({ showZoomPercent: true, zoomPercent: Math.round(this.data.scale * 100) })
     this._zoomTimer = setTimeout(() => this.setData({ showZoomPercent: false }), 800)
   },
-  closeRegionModal() { this.setData({ showRegionModal: false, activeRegion: null }) }
+  closeRegionModal() { this.setData({ showRegionModal: false, activeRegion: null }) },
+  noop() {}
 })
