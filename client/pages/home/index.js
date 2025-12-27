@@ -4,25 +4,46 @@ const util = require('../../utils/util')
 // ===== 类型映射（用于首页地图详情弹窗显示） =====
 // 设施类型（示例：1 代表消防栓）
 const FACILITY_TYPE_MAP = {
-  1: '消防栓',
-  2: '电梯',
-  3: '扶手电梯',
-  4: '饮水机',
+  1: '电动扶梯',
+  2: '灭火器',
+  3: '安全出口',
+  4: '服务台',
+  5: '其他',
+}
+
+// 设施图标映射（canvas drawImage 需要位图资源；已将 svg 转为同名 png）
+const FACILITY_ICON_MAP = {
+  1: '/images/facility/escalator.png',
+  2: '/images/facility/fire_extinguisher.png',
+  3: '/images/facility/exit.png',
+  4: '/images/facility/info.png',
+  5: '/images/facility/other.png',
+}
+
+// 设施图标底盘颜色（不同类型使用不同底色，提升白色图标在白底地图上的可读性）
+const FACILITY_ICON_BASE_COLOR = {
+  1: 'rgba(24,144,255,0.95)',   // 电梯/扶梯：蓝
+  2: 'rgba(220,38,38,0.95)',    // 灭火器：红
+  3: 'rgba(34,197,94,0.95)',    // 安全出口：绿
+  4: 'rgba(245,158,11,0.95)',   // 服务台：黄
+  5: 'rgba(255,120,40,0.95)',   // 其他：橙
 }
 
 // 活动区域“类型”映射（示例：1——促销活动）
 // 注意：这里映射的是“活动类型码”，不是 eventarea/storearea 这种区域大类。
 const EVENT_AREA_TYPE_MAP = {
+  0: '其他活动',
   1: '促销活动',
-  2: '品牌活动',
-  3: '主题活动',
-  4: '会员活动',
-  5: '其他活动',
+  2: '展览活动',
+  3: '表演活动',
 }
 
 // 其他区域“类型”映射（按你的后端类型码补全）
 const OTHER_AREA_TYPE_MAP = {
-  1: '休息区',
+  0: '公共区域',
+  1: '卫生间',
+  2: '电梯间',
+  3: '其他',
 }
 
 // 区域大类（eventarea/storearea/otherarea...）
@@ -338,6 +359,50 @@ Page({
       pushRegion(map.raw.other_areas, 'rgba(120,200,80,0.3)', 'otherarea')
       pushRegion(map.raw.events, 'rgba(220,80,80,0.3)', 'eventarea')
 
+      const showLabels = (this.data.scale || 1) >= 2.4
+      const truncate = (text, maxChars) => {
+        if (!text) return ''
+        const s = String(text)
+        if (s.length <= maxChars) return s
+        return s.slice(0, Math.max(0, maxChars - 1)) + '…'
+      }
+      const drawLabel = (x, y, text, fontSize) => {
+        if (!text) return
+        const maxChars = 10
+        const t = truncate(text, maxChars)
+        ctx.setFontSize(fontSize)
+        ctx.setTextAlign('center')
+        ctx.setTextBaseline('middle')
+        // 白色描边 + 深色填充：无外框但清晰
+        ctx.setStrokeStyle('rgba(255,255,255,0.95)')
+        ctx.setLineWidth(3)
+        ctx.strokeText(t, x, y)
+        ctx.setFillStyle('#111')
+        ctx.fillText(t, x, y)
+      }
+      const centroidOfRing = (ring) => {
+        if (!Array.isArray(ring) || ring.length < 3) return null
+        // polygon centroid (area-weighted); fallback to average if degenerate
+        let area = 0
+        let cxSum = 0
+        let cySum = 0
+        for (let i = 0; i < ring.length - 1; i++) {
+          const x0 = ring[i][0], y0 = ring[i][1]
+          const x1 = ring[i + 1][0], y1 = ring[i + 1][1]
+          const a = x0 * y1 - x1 * y0
+          area += a
+          cxSum += (x0 + x1) * a
+          cySum += (y0 + y1) * a
+        }
+        if (Math.abs(area) < 1e-9) {
+          let sx = 0, sy = 0
+          ring.forEach(p => { sx += p[0]; sy += p[1] })
+          return [sx / ring.length, sy / ring.length]
+        }
+        area *= 0.5
+        return [cxSum / (6 * area), cySum / (6 * area)]
+      }
+
       regions.forEach(r => {
         ctx.setFillStyle(r.color)
         ctx.beginPath()
@@ -350,6 +415,30 @@ Page({
         ctx.fill()
       })
 
+      // labels on regions when zoomed in
+      if (showLabels) {
+        regions.forEach(r => {
+          try {
+            const ring = r.coords && r.coords[0]
+            const c = centroidOfRing(ring)
+            if (!c) return
+            const [lx, ly] = toCanvas(c[0], c[1])
+
+            const metaWithKind = (r && r.meta && typeof r.meta === 'object')
+              ? Object.assign({}, r.meta, { __kind: r.kind })
+              : r.meta
+            const norm = this._normalizeRegionForModal(metaWithKind)
+            let label = ''
+            if (r.kind === 'storearea') {
+              label = (norm && (norm.store_name || norm.name)) || (r.meta && (r.meta.store_name || r.meta.name || r.meta.title))
+            } else {
+              label = (norm && norm.type_display) || (r.kind === 'eventarea' ? '活动区域' : '其他区域')
+            }
+            drawLabel(lx, ly, label, 12)
+          } catch (e) {}
+        })
+      }
+
       // draw facility markers (points)
       const facilities = (map.raw.facilities || []).filter(f => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'))
       ctx.setFillStyle('rgba(255,120,40,0.95)')
@@ -359,17 +448,44 @@ Page({
           if (!coords) return
           const [fx, fy] = coords
           const [cx, cy] = toCanvas(fx, fy)
-          // further reduced marker size: base multiplier lowered to 2, clamp smaller
-          const rMark = Math.max(1, Math.min(4, Math.round(2 * (baseScale * this.data.scale))))
-          ctx.beginPath()
-          ctx.arc(cx, cy, rMark, 0, Math.PI * 2)
-          ctx.fill()
-          // optional white center
-          ctx.setFillStyle('#fff')
-          ctx.beginPath()
-          ctx.arc(cx, cy, Math.max(1, Math.round(rMark/2)), 0, Math.PI * 2)
-          ctx.fill()
-          ctx.setFillStyle('rgba(255,120,40,0.95)')
+            const norm = this._normalizeRegionForModal(f)
+            const code = (norm && (norm.type_code ?? norm.facility_type ?? norm.type))
+            const num = Number(code)
+            const hasNum = !Number.isNaN(num) && Number.isFinite(num)
+            const key = hasNum ? num : String(code)
+            const icon = FACILITY_ICON_MAP[key]
+            const baseColor = FACILITY_ICON_BASE_COLOR[key] || 'rgba(24,144,255,0.95)'
+
+            // icon size grows with zoom but clamps to keep readable (slightly smaller)
+            const iconSize = Math.max(10, Math.min(22, Math.round(10 * (this.data.scale || 1))))
+            if (icon) {
+              // 白色图标在白底地图上不清晰：先画一个高对比底座再叠加图标
+              if (typeof ctx.setShadow === 'function') {
+                ctx.setShadow(0, 3, 8, 'rgba(0,0,0,0.22)')
+              }
+              ctx.setFillStyle(baseColor)
+              ctx.beginPath()
+              ctx.arc(cx, cy, (iconSize / 2) + 1, 0, Math.PI * 2)
+              ctx.fill()
+              if (typeof ctx.setShadow === 'function') {
+                ctx.setShadow(0, 0, 0, 'rgba(0,0,0,0)')
+              }
+              ctx.drawImage(icon, cx - iconSize / 2, cy - iconSize / 2, iconSize, iconSize)
+            } else {
+              // fallback to dot marker
+              ctx.setFillStyle('rgba(255,120,40,0.95)')
+              const rMark = Math.max(2, Math.min(6, Math.round(2 * (baseScale * this.data.scale))))
+              ctx.beginPath()
+              ctx.arc(cx, cy, rMark, 0, Math.PI * 2)
+              ctx.fill()
+            }
+
+          if (showLabels) {
+            const norm = this._normalizeRegionForModal(f)
+            const label = norm && norm.type_display
+            // 将文字绘制在 marker 附近（居中）
+            drawLabel(cx, cy - 18, label, 11)
+          }
         } catch (e) {}
       })
 
