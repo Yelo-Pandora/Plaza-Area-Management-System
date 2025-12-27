@@ -37,8 +37,15 @@ export function usePropertiesLogic() {
   // 监听选中变更
   watch(selectedFeature, (newVal) => {
     if (newVal) {
-      form.name = newVal.name || newVal.store_name || newVal.event_name || newVal.description || ''
-      form.type = newVal.store_type?.toString() || newVal.type_id?.toString() || newVal.event_type?.toString() || newVal.type?.toString() || '0'
+      // 只有店铺类型回显名称，其他类型（设施、活动区域、其他区域）名称置空
+      if (selectedType.value === 'storearea') {
+        form.name = newVal.store_name || ''
+      } else {
+        form.name = ''
+      }
+
+      // 其他字段照常回显
+      form.type = newVal.store_type?.toString() || newVal.type_id?.toString() || newVal.type?.toString() || '0'
       form.description = newVal.description || ''
       form.is_active = newVal.is_active !== undefined ? newVal.is_active : true
     }
@@ -95,9 +102,6 @@ export function usePropertiesLogic() {
   }
 
   const save = async () => {
-    // ... (保留原有的 save 逻辑不变) ...
-    // ... 略 ...
-    // 原有代码:
     if (!selectedFeature.value || !selectedType.value) return
     submitting.value = true
     errorMessage.value = ''
@@ -112,17 +116,12 @@ export function usePropertiesLogic() {
       if (selectedType.value === 'storearea') {
         submitData.store_name = form.name
         submitData.store_type = parseInt(form.type)
-        delete submitData.name
       } else if (selectedType.value === 'eventarea') {
-        submitData.event_name = form.name
         submitData.event_type = parseInt(form.type)
-        delete submitData.name
       } else if (selectedType.value === 'otherarea') {
         submitData.type_id = parseInt(form.type)
       } else if (selectedType.value === 'facility') {
-        submitData.description = form.name
         submitData.type = parseInt(form.type)
-        delete submitData.name
       }
 
       // 如果是新元素，提示先保存画布
@@ -135,8 +134,6 @@ export function usePropertiesLogic() {
 
       const localUpdate = { ...submitData }
       if (selectedType.value === 'storearea') localUpdate.store_name = form.name
-      else if (selectedType.value === 'eventarea') localUpdate.event_name = form.name
-      else if (selectedType.value === 'otherarea') localUpdate.name = form.name
 
       updateLocalFeature(localUpdate)
       alert('属性更新成功')

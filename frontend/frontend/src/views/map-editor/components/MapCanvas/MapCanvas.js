@@ -1,11 +1,10 @@
-import { watchPostEffect, onUnmounted, nextTick } from 'vue'
+import { watchPostEffect, onUnmounted } from 'vue'
 import { useMapEditorStore } from '../../composables/useMapEditorStore'
-import * as managementAPI from '@/api/management'
 import * as KonvaImport from 'konva'
 
 // --- 引入 SVG 图标 ---
-import elevatorIcon from '@/assets/icons/elevator.svg'
-import restroomIcon from '@/assets/icons/restroom.svg'
+import escalatorIcon from '@/assets/icons/escalator.svg'
+import fireExtinguisherIcon from '@/assets/icons/fire_extinguisher.svg'
 import exitIcon from '@/assets/icons/exit.svg'
 import infoIcon from '@/assets/icons/info.svg'
 import otherIcon from '@/assets/icons/other.svg'
@@ -51,8 +50,8 @@ export function useCanvasLogic(stageContainerRef) {
   // --- 图片资源管理 ---
   const iconImages = {} // 存储加载好的 Image 对象
   const iconSources = {
-    0: elevatorIcon,
-    1: restroomIcon,
+    0: escalatorIcon,
+    1: fireExtinguisherIcon,
     2: exitIcon,
     3: infoIcon,
     4: otherIcon
@@ -97,11 +96,11 @@ export function useCanvasLogic(stageContainerRef) {
   const getAreaName = (area, type) => {
     if (type === 'storearea') return area.store_name || '未命名店铺'
     if (type === 'eventarea') {
-      const types = { 0: '普通活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
+      const types = { 0: '通用活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
       return types[area.type] !== undefined ? types[area.type] : '活动区域'
     }
     if (type === 'otherarea') {
-      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他区域' }
+      const types = { 0: '公共区域', 1: '卫生间', 2: '电梯间', 3: '其他区域' }
       return types[area.type] !== undefined ? types[area.type] : '其他区域'
     }
     if (type === 'facility') return area.description || '设施'
@@ -309,7 +308,7 @@ export function useCanvasLogic(stageContainerRef) {
     }
 
     // 1. 根据类型获取样式配置
-    const type = facility.type || 4 // 默认其他
+    const type = (facility.type !== undefined && facility.type !== null) ? facility.type : 4
     const style = facilityStyles[type] || facilityStyles[4]
     const isSelected = selectedFeature.value?.id === facility.id && selectedType.value === 'facility'
 

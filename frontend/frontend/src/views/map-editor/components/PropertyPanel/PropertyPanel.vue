@@ -20,7 +20,7 @@
         </div>
 
         <!-- ... (中间的表单项保持不变) ... -->
-        <div class="form-group">
+        <div class="form-group" v-if="selectedType === 'storearea'">
           <label class="form-label">名称</label>
           <input
             v-model="form.name"
@@ -42,20 +42,20 @@
               <option value="4">服务</option>
             </template>
             <template v-if="selectedType === 'eventarea'">
-              <option value="0">普通活动区域</option>
+              <option value="0">通用活动区域</option>
               <option value="1">促销活动</option>
               <option value="2">展览活动</option>
               <option value="3">表演活动</option>
             </template>
             <template v-if="selectedType === 'otherarea'">
               <option value="0">公共区域</option>
-              <option value="1">办公区域</option>
-              <option value="2">设备区域</option>
+              <option value="1">卫生间</option>
+              <option value="2">电梯间</option>
               <option value="3">其他</option>
             </template>
             <template v-if="selectedType === 'facility'">
-              <option value="0">电梯</option>
-              <option value="1">卫生间</option>
+              <option value="0">电动扶梯</option>
+              <option value="1">灭火器</option>
               <option value="2">安全出口</option>
               <option value="3">服务台</option>
               <option value="4">其他</option>
