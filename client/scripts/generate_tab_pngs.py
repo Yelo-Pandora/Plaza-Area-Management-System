@@ -1,9 +1,13 @@
-"""
-生成 64x64 彩色 tab 图标并写入 client/images/tab/ 下。
-使用 Pillow 绘制简单图形表示各图标：home, route, activities, search, user
+"""client/scripts/generate_tab_pngs.py
+
+生成 64x64 tab 图标并写入 client/images/tab/ 下。
+
+- 未选中：灰色（与 client/app.json 的 tabBar.color 一致）
+- 选中：蓝色（与 client/app.json 的 tabBar.selectedColor 一致）
+
 运行：
-  pip install pillow
-  python client/scripts/generate_tab_pngs.py
+    pip install pillow
+    python client/scripts/generate_tab_pngs.py
 """
 from PIL import Image, ImageDraw
 import os
@@ -19,6 +23,11 @@ ICONS = [
 ]
 SIZE = 64
 
+# Colors aligned with client/app.json
+INACTIVE = (0x66, 0x66, 0x66, 0xFF)  # #666666
+ACTIVE = (0x18, 0x90, 0xFF, 0xFF)    # #1890ff
+TRANSPARENT = (0, 0, 0, 0)
+
 os.makedirs(OUT_DIR, exist_ok=True)
 
 def save(name, img):
@@ -26,95 +35,57 @@ def save(name, img):
     img.save(path, format='PNG')
     print('Wrote', path)
 
-# Home icon: house silhouette
-img = Image.new('RGBA', (SIZE, SIZE), (255,255,255,0))
-d = ImageDraw.Draw(img)
-# roof
-d.polygon([(8,28),(32,8),(56,28)], fill=(34,170,25,255))
-# body
-d.rectangle([(16,28),(48,52)], fill=(34,170,25,255))
-# door
-d.rectangle([(28,36),(36,52)], fill=(255,255,255,255))
-save('home', img)
+def draw_home(color):
+    img = Image.new('RGBA', (SIZE, SIZE), TRANSPARENT)
+    d = ImageDraw.Draw(img)
+    d.polygon([(8, 28), (32, 8), (56, 28)], fill=color)
+    d.rectangle([(16, 28), (48, 52)], fill=color)
+    # Cut-out door to avoid introducing a non-gray/blue color block
+    d.rectangle([(28, 36), (36, 52)], fill=TRANSPARENT)
+    return img
 
-# Route icon: curved path
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-# path strokes
-d.line([(10,54),(22,40),(36,32),(54,14)], fill=(136,136,136,255), width=6)
-# start/end dots
-d.ellipse([(6,50),(14,58)], fill=(26,26,26,255))
-d.ellipse([(50,10),(58,18)], fill=(26,170,25,255))
-save('route', img)
+def draw_route(color):
+    img = Image.new('RGBA', (SIZE, SIZE), TRANSPARENT)
+    d = ImageDraw.Draw(img)
+    d.line([(10, 54), (22, 40), (36, 32), (54, 14)], fill=color, width=6)
+    d.ellipse([(6, 50), (14, 58)], fill=color)
+    d.ellipse([(50, 10), (58, 18)], fill=color)
+    return img
 
-# Activities icon: circle + bar
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-# circle
-d.ellipse([(20,8),(44,32)], fill=(34,170,25,255))
-# bar
-d.rectangle([(12,36),(52,50)], fill=(34,170,25,255))
-save('activities', img)
+def draw_activities(color):
+    img = Image.new('RGBA', (SIZE, SIZE), TRANSPARENT)
+    d = ImageDraw.Draw(img)
+    d.ellipse([(20, 8), (44, 32)], fill=color)
+    d.rectangle([(12, 36), (52, 50)], fill=color)
+    return img
 
-# Search icon: magnifier
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-# circle
-d.ellipse([(10,10),(36,36)], outline=(136,136,136,255), width=6)
-# handle
-d.line([(34,34),(54,54)], fill=(136,136,136,255), width=6)
-save('search', img)
+def draw_search(color):
+    img = Image.new('RGBA', (SIZE, SIZE), TRANSPARENT)
+    d = ImageDraw.Draw(img)
+    d.ellipse([(10, 10), (36, 36)], outline=color, width=6)
+    d.line([(34, 34), (54, 54)], fill=color, width=6)
+    return img
 
-# User icon: head + body
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-# head
-d.ellipse([(18,8),(46,36)], fill=(34,170,25,255))
-# body
-d.rectangle([(12,34),(52,54)], fill=(34,170,25,255))
-save('user', img)
+def draw_user(color):
+    img = Image.new('RGBA', (SIZE, SIZE), TRANSPARENT)
+    d = ImageDraw.Draw(img)
+    d.ellipse([(18, 8), (46, 36)], fill=color)
+    d.rectangle([(12, 34), (52, 54)], fill=color)
+    return img
 
-# Also write active variants (green tone)
-for name in ICONS:
-    base = Image.open(os.path.join(OUT_DIR, f"{name}.png")).convert('RGBA')
-    # create active by tinting to green (already green for most; for route/search tint stroke)
-    active = Image.new('RGBA', base.size, (0,0,0,0))
-    active_draw = ImageDraw.Draw(active)
-    # overlay slight green circle for demonstration (no complex recolor here)
-    # Instead, for simplicity, re-create icons with green highlight where appropriate
 
-# Recreate active versions with green primary color
-# Home active
-img = Image.new('RGBA', (SIZE, SIZE), (255,255,255,0))
-d = ImageDraw.Draw(img)
-d.polygon([(8,28),(32,8),(56,28)], fill=(26,170,25,255))
-d.rectangle([(16,28),(48,52)], fill=(26,170,25,255))
-d.rectangle([(28,36),(36,52)], fill=(255,255,255,255))
-save('home-active', img)
-# Route active
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-d.line([(10,54),(22,40),(36,32),(54,14)], fill=(26,170,25,255), width=6)
-d.ellipse([(6,50),(14,58)], fill=(26,170,25,255))
-d.ellipse([(50,10),(58,18)], fill=(26,170,25,255))
-save('route-active', img)
-# Activities active
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-d.ellipse([(20,8),(44,32)], fill=(26,170,25,255))
-d.rectangle([(12,36),(52,50)], fill=(26,170,25,255))
-save('activities-active', img)
-# Search active
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-d.ellipse([(10,10),(36,36)], outline=(26,170,25,255), width=6)
-d.line([(34,34),(54,54)], fill=(26,170,25,255), width=6)
-save('search-active', img)
-# User active
-img = Image.new('RGBA',(SIZE,SIZE),(255,255,255,0))
-d = ImageDraw.Draw(img)
-d.ellipse([(18,8),(46,36)], fill=(26,170,25,255))
-d.rectangle([(12,34),(52,54)], fill=(26,170,25,255))
-save('user-active', img)
+# Inactive (gray)
+save('home', draw_home(INACTIVE))
+save('route', draw_route(INACTIVE))
+save('activities', draw_activities(INACTIVE))
+save('search', draw_search(INACTIVE))
+save('user', draw_user(INACTIVE))
+
+# Active (blue)
+save('home-active', draw_home(ACTIVE))
+save('route-active', draw_route(ACTIVE))
+save('activities-active', draw_activities(ACTIVE))
+save('search-active', draw_search(ACTIVE))
+save('user-active', draw_user(ACTIVE))
 
 print('All icons generated.')

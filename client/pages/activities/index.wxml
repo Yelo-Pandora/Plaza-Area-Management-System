@@ -43,12 +43,12 @@
 			<view class="modal" catchtap>
 				<view class="modal-header">
 					<view class="modal-title">{{modalEvent.name}}</view>
-					<view class="modal-close" bindtap="closeModal">关闭</view>
+					<view class="modal-close-x" bindtap="closeModal">×</view>
 				</view>
 				<view class="modal-body">
 					<view class="modal-row" wx:if="{{modalLoading}}">加载区域信息...</view>
 					<block wx:for="{{modalAreas}}" wx:for-item="area" wx:key="id">
-						<view class="area-card">
+						<view class="area-card {{area.area_type=='eventarea' ? 'area-card-event' : 'area-card-store'}}">
 							<view class="area-title-row">
 								<!-- 若为 eventarea，标题固定为“活动区域”；否则显示店铺/区域名称（若有） -->
 								<block wx:if="{{area.area_type=='eventarea'}}">

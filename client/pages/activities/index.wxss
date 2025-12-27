@@ -5,7 +5,7 @@
 	align-items: stretch;
 	justify-content: flex-start;
 	padding: 0; /* 去掉全局顶部大间距 */
-	background: #eef6ff;
+	background: #f5faff;
 }
 
 
@@ -29,9 +29,9 @@
 	display: inline-flex;
 	align-items: center;
 	padding: 6px 10px;
-	border-radius: 12px;
-	background: #eef6ff;
-	border: 1px solid #1890ff;
+	border-radius: 999px;
+	background: #ffffff;
+	border: 1px solid rgba(24,144,255,0.35);
 	color: #1890ff;
 	margin-right: 8px;
 	margin-bottom: 0; /* 单行无需底部间距 */
@@ -42,6 +42,7 @@
 	background: #1890ff;
 	color: #fff;
 	border: 1px solid #1890ff;
+	box-shadow: 0 4px 10px rgba(24,144,255,0.22);
 }
 
 /* 吸顶筛选栏 */
@@ -52,8 +53,8 @@
 	right: 0;
 	z-index: 1000;
 	background: #fff;
-	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-	border-bottom: 1px solid #eef6ff;
+	box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+	border-bottom: 1px solid rgba(24,144,255,0.10);
 }
 .sticky-spacer {
 	height: 64px; /* 与 sticky-filter 的实际高度保持一致，避免遮挡 */
@@ -61,14 +62,17 @@
 
 .activity-item {
 	background: #fff;
-	border-radius: 12px;
-	padding: 8px;
-	margin: 10px 12px;
-	border: 1px solid #eef6ff;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	border-radius: 14px;
+	padding: 10px;
+	margin: 12px 12px;
+	border: 1px solid rgba(17,24,39,0.06);
+	box-shadow: 0 10px 24px rgba(17,24,39,0.08);
+	overflow: hidden;
+	position: relative;
+	border-left: 4px solid rgba(24,144,255,0.85);
 }
 .activity-card {
-	background: #eef6ff;
+	background: #ffffff;
 	padding: 10px;
 	border-radius: 10px;
 	box-shadow: none;
@@ -80,11 +84,11 @@
 	width: 76px;
 	height: 76px;
 	flex: 0 0 76px;
-	border-radius: 8px;
+	border-radius: 10px;
 	overflow: hidden;
 	margin-right: 12px;
-	background: #fff;
-	border: 1px solid #eef6ff;
+	background: #f3f4f6;
+	border: 1px solid rgba(17,24,39,0.08);
 }
 .thumb {
 	width: 100%;
@@ -101,22 +105,24 @@
 }
 .act-title {
 	font-size: 16px;
-	font-weight: 600;
+	font-weight: 700;
 	margin-bottom: 4px;
-	color: #111;
+	color: #0f172a;
+	letter-spacing: 0.2px;
 }
 .badge {
-	background: #eef6ff;
-	color: #1890ff;
+	background: rgba(24,144,255,0.10);
+	color: #0b5fcc;
 	font-size: 11px;
 	padding: 4px 8px;
 	border-radius: 12px;
-	border: 1px solid #1890ff;
+	border: 1px solid rgba(24,144,255,0.35);
 }
 .act-desc {
-	color: #444;
+	color: #334155;
 	font-size: 13px;
 	margin: 6px 0;
+	line-height: 18px;
 }
 .desc-clamp {
 	display: -webkit-box;
@@ -125,7 +131,7 @@
 	overflow: hidden;
 }
 .act-time {
-	color: #888;
+	color: #64748b;
 	font-size: 12px;
 }
 .card-footer {
@@ -137,7 +143,7 @@
 .event-status {
 	font-size: 12px;
 	padding: 4px 8px;
-	border-radius: 10px;
+	border-radius: 999px;
 	display: inline-block;
 	min-width: 44px;
 	text-align: center;
@@ -176,23 +182,29 @@
 	justify-content: space-between;
 	align-items: center;
 	padding: 12px;
-	background: #eef6ff;
-	border-bottom: 1px solid #eef6ff;
+	background: #f0f7ff;
+	border-bottom: 1px solid rgba(24,144,255,0.12);
 	flex: 0 0 auto;
+	position: relative;
+	padding-right: 44px;
 }
 .modal-title {
 	font-size: 16px;
 	font-weight: 700;
 	color: #111;
 }
-.modal-close {
+.modal-close-x {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 	color: #1890ff;
-	font-weight: 700;
-	background: #fff;
-	border: 1px solid #1890ff;
-	border-radius: 999px;
-	padding: 6px 10px;
-	font-size: 12px;
+	font-size: 22px;
+	font-weight: 800;
 	line-height: 1;
 }
 .modal-body {
@@ -211,8 +223,20 @@
 	border-radius: 12px;
 	padding: 12px;
 	margin-bottom: 10px;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-	border: 1px solid #eef6ff;
+	box-shadow: 0 10px 22px rgba(17,24,39,0.08);
+	border: 1px solid rgba(17,24,39,0.06);
+	border-left: 3px solid rgba(24,144,255,0.55);
+}
+
+/* 区分商铺区域 vs 活动区域（不改布局，仅通过蓝白对比增强辨识） */
+.area-card-event {
+	border-left-color: rgba(24,144,255,0.95);
+	background: linear-gradient(180deg, rgba(24,144,255,0.08) 0%, #ffffff 65%);
+}
+.area-card-store {
+	/* 与活动区域同款样式，仅把强调边做成浅紫 */
+	border-left-color: rgba(124,58,237,0.85);
+	background: linear-gradient(180deg, rgba(24,144,255,0.08) 0%, #ffffff 65%);
 }
 .area-header {
 	display: flex;
@@ -229,16 +253,29 @@
 .area-title {
 	font-size: 14px;
 	font-weight: 700;
-	color: #111;
+	color: #0f172a;
+}
+.area-card-event .area-title {
+	color: #0b5fcc;
+}
+.area-card-store .area-title {
+	color: #5b21b6;
 }
 .area-badge { order: 2; }
 .area-badge {
 	font-size: 11px;
-	color: #1890ff;
-	background: #eef6ff;
+	color: #0b5fcc;
+	background: rgba(24,144,255,0.10);
 	padding: 4px 8px;
 	border-radius: 999px;
-	border: 1px solid #1890ff;
+	border: 1px solid rgba(24,144,255,0.35);
+}
+
+/* 商铺 badge：保持与活动区域一致（蓝色体系） */
+.area-card-store .area-badge {
+	color: #0b5fcc;
+	background: rgba(24,144,255,0.10);
+	border-color: rgba(24,144,255,0.35);
 }
 
 .area-badge-line { display: flex; justify-content: flex-end; margin-bottom: 6px; }
@@ -265,7 +302,7 @@
 	align-items: center;
 	margin-top: 8px;
 	padding-top: 8px;
-	border-top: 1px solid #eef6ff;
+	border-top: 1px solid rgba(17,24,39,0.06);
 }
 .area-status-right {
 	font-size: 12px;
@@ -278,13 +315,14 @@
 
 /* 状态通用样式 */
 .status-enabled {
-	background: #28a745; /* 绿色 */
+	background: #1890ff;
 	color: #fff;
-	box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+	border: 1px solid rgba(24,144,255,0.65);
+	box-shadow: 0 6px 14px rgba(24,144,255,0.22);
 }
 .status-disabled {
-	background: #ff4d4f; /* 红色 - 已截止/停用 */
-	color: #fff;
-	border: 1px solid #d9363e;
-	box-shadow: 0 1px 0 rgba(217,54,62,0.08);
+	background: #f1f5f9;
+	color: #475569;
+	border: 1px solid rgba(71,85,105,0.18);
+	box-shadow: none;
 }

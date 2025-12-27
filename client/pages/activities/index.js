@@ -212,7 +212,7 @@ Page({
         })
 
         // 示例映射：可按需调整或从后端获取更准确的映射
-        const areaTypeLabelMap = { '1': '促销活动', '2': '品牌活动', '3': '主题活动', '4': '会员活动', '5': '新品发布' }
+        const areaTypeLabelMap = { '1': '促销活动', '2': '展览活动', '3': '表演活动', '0': '其他活动'}
         const types = Array.from(areaTypeSet).map(k => ({ key: k, label: areaTypeLabelMap[k] || `类型 ${k}` }))
 
         // 若存在没有任何 eventarea type 的活动，则加入一个 "其他" 筛选项（key: 'other'）
