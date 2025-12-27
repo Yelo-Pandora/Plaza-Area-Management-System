@@ -19,8 +19,9 @@
 		</view>
 	</view>
 
-	<view wx:if="{{showRegionModal}}" class="region-modal">
-		<view class="modal-card">
+	<view wx:if="{{showRegionModal}}" class="region-modal" catchtouchmove="noop" catchtap="noop">
+		<view class="modal-card" catchtouchmove="noop" catchtap="noop">
+			<view class="modal-close-x" bindtap="closeRegionModal">×</view>
 			<view class="modal-body">
 				<!-- 商铺优先展示（后端可能使用 store_name 字段或 type/store 类型标识） -->
 				<view wx:if="{{activeRegion && !activeRegion.is_facility && (activeRegion.store_name || activeRegion.type === 'store' || activeRegion.is_shop)}}">
@@ -57,7 +58,7 @@
 						<view class="info-card">
 							<view class="info-row">
 								<text class="info-label">类型</text>
-								<text class="info-value">{{activeRegion.area_type || activeRegion.type || '活动区域'}}</text>
+								<text class="info-value">{{activeRegion.type_display || '活动区域'}}</text>
 							</view>
 							<view class="info-row" wx:if="{{activeRegion.organizer_name}}">
 								<text class="info-label">负责人</text>
@@ -76,7 +77,7 @@
 				<!-- 设施（point）只显示一行类型 -->
 				<view wx:elif="{{activeRegion && activeRegion.is_facility && !activeRegion.is_shop}}">
 						<view class="info-card">
-							<view class="info-pill">设施类型：{{activeRegion.facility_type || activeRegion.type || activeRegion.area_type}}</view>
+							<view class="info-pill">设施类型：{{activeRegion.type_display || activeRegion.facility_type || activeRegion.type || activeRegion.area_type}}</view>
 						</view>
 				</view>
 				<!-- 其他区域：仅显示 类型、是否为公共区域、详情 -->
@@ -84,7 +85,7 @@
 						<view class="info-card">
 							<view class="info-row">
 								<text class="info-label">类型</text>
-								<text class="info-value">{{activeRegion.area_type || activeRegion.type || '-'}}</text>
+								<text class="info-value">{{activeRegion.type_display || activeRegion.area_type || activeRegion.type || '-'}}</text>
 							</view>
 							<view class="info-row">
 								<text class="info-label">公共区域</text>
@@ -96,9 +97,6 @@
 							</view>
 						</view>
 				</view>
-			</view>
-			<view class="modal-actions">
-				<button bindtap="closeRegionModal">关闭</button>
 			</view>
 		</view>
 	</view>
@@ -127,7 +125,7 @@
 			</block>
 		</block>
 		<view class="more-actions">
-			<button bindtap="openActivityList">更多活动</button>
+			<button class="more-link" plain="true" hover-class="none" bindtap="openActivityList">查看更多活动</button>
 		</view>
 	</view>
   

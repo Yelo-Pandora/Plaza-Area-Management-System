@@ -1,6 +1,38 @@
 // pages/home/index.js
 const util = require('../../utils/util')
 
+// ===== 类型映射（用于首页地图详情弹窗显示） =====
+// 设施类型（示例：1 代表消防栓）
+const FACILITY_TYPE_MAP = {
+  1: '消防栓',
+  2: '电梯',
+  3: '扶手电梯',
+  4: '饮水机',
+}
+
+// 活动区域“类型”映射（示例：1——促销活动）
+// 注意：这里映射的是“活动类型码”，不是 eventarea/storearea 这种区域大类。
+const EVENT_AREA_TYPE_MAP = {
+  1: '促销活动',
+  2: '品牌活动',
+  3: '主题活动',
+  4: '会员活动',
+  5: '其他活动',
+}
+
+// 其他区域“类型”映射（按你的后端类型码补全）
+const OTHER_AREA_TYPE_MAP = {
+  1: '休息区',
+}
+
+// 区域大类（eventarea/storearea/otherarea...）
+const AREA_TYPE_MAP = {
+  eventarea: '活动区域',
+  storearea: '商铺区域',
+  otherarea: '其他区域',
+  publicarea: '公共区域'
+}
+
 Page({
   data: {
     recommended: [],
@@ -14,6 +46,30 @@ Page({
     activeRegion: null
     ,showZoomPercent: false,
     zoomPercent: 100
+  },
+
+  noop() {},
+
+  onPageScroll(e) {
+    const scrollTop = (e && typeof e.scrollTop === 'number') ? e.scrollTop : 0
+    this._pageScrollTop = scrollTop
+
+    // 弹窗打开时锁定页面滚动：避免滚轮/触摸导致背景滚动并“盖住”弹窗
+    if (this.data.showRegionModal) {
+      if (this._lockScrollTop === undefined || this._lockScrollTop === null) {
+        this._lockScrollTop = scrollTop
+        return
+      }
+      if (this._restoringScroll) return
+      if (Math.abs(scrollTop - this._lockScrollTop) > 2) {
+        this._restoringScroll = true
+        wx.pageScrollTo({
+          scrollTop: this._lockScrollTop,
+          duration: 0,
+          complete: () => { this._restoringScroll = false }
+        })
+      }
+    }
   },
 
   onLoad(options) {
@@ -481,6 +537,8 @@ Page({
           meta = Object.assign({}, meta, { __kind: hit.kind })
         }
         const norm = this._normalizeRegionForModal(meta)
+        // 锁定当前滚动位置，避免弹窗打开后仍可滚动背景
+        this._lockScrollTop = this._pageScrollTop || 0
         this.setData({ showRegionModal: true, activeRegion: norm })
         // 若规范化后缺少组织者/联系方式，尝试通过 search 模块的详情接口获取更详细的区域信息
         try {
@@ -515,6 +573,7 @@ Page({
                 const mergedRaw = Object.assign({}, (norm && norm._raw) ? norm._raw : {}, (more && more._raw) ? more._raw : {})
                 if (norm && norm._raw && norm._raw.__kind && !mergedRaw.__kind) mergedRaw.__kind = norm._raw.__kind
                 merged._raw = mergedRaw
+                merged.type_display = this._getRegionTypeDisplay(merged)
                 this.setData({ activeRegion: merged })
               } catch (e) { console.warn('normalize fetched area failed', e) }
             }).catch(err => {
@@ -527,6 +586,68 @@ Page({
   },
 
   // normalize various backend shapes into common fields used by modal
+  _formatTypeCodeDisplay(code, map, unknownPrefix) {
+    if (code === undefined || code === null || code === '') return ''
+    const num = Number(code)
+    const hasNum = !Number.isNaN(num) && Number.isFinite(num)
+    const key = hasNum ? num : String(code)
+    const label = map ? map[key] : undefined
+    if (label) return label
+    return unknownPrefix ? `${unknownPrefix}${hasNum ? num : String(code)}` : String(code)
+  },
+
+  _formatFacilityTypeDisplay(code) {
+    if (code === undefined || code === null || code === '') return ''
+    const num = Number(code)
+    const hasNum = !Number.isNaN(num) && Number.isFinite(num)
+    const key = hasNum ? num : String(code)
+    const label = FACILITY_TYPE_MAP[key]
+    if (label) return `${label}`
+    return `未知设施：${hasNum ? num : String(code)}`
+  },
+
+  _formatAreaTypeDisplay(code) {
+    if (code === undefined || code === null || code === '') return ''
+    const key = String(code).toLowerCase()
+    return AREA_TYPE_MAP[key] || String(code)
+  },
+
+  _getRegionTypeDisplay(out) {
+    if (!out || typeof out !== 'object') return ''
+
+    // 设施：本次需求不改其“弹窗展示”，这里仍保留映射能力以便后续使用
+    if (out.is_facility) {
+      const facilityCode = out.facility_type ?? out.type ?? (out._raw && out._raw.facility_type)
+      return this._formatFacilityTypeDisplay(facilityCode)
+    }
+
+    const kind = (out._raw && out._raw.__kind) ? out._raw.__kind : undefined
+    const areaType = out.area_type ?? kind
+
+    // 活动区域：显示“活动类型”映射（例如 1 -> 促销活动）
+    if (out.is_event || areaType === 'eventarea') {
+      const code = out.type_code ?? out.type
+      const label = this._formatTypeCodeDisplay(code, EVENT_AREA_TYPE_MAP, '未知活动类型：')
+      return label || '活动区域'
+    }
+
+    // 其他区域：显示“其他区域类型”映射
+    if (!out.is_shop && !out.is_event && !out.is_facility) {
+      const code = out.type_code ?? out.type
+      if (code !== undefined && code !== null && code !== '') {
+        const num = Number(code)
+        const hasNum = !Number.isNaN(num) && Number.isFinite(num)
+        const key = hasNum ? num : String(code)
+        const mapped = OTHER_AREA_TYPE_MAP[key]
+        if (mapped) return mapped
+        if (hasNum) return `未知类型：${num}`
+      }
+    }
+
+    // 兜底：显示区域大类
+    return this._formatAreaTypeDisplay(areaType || out.type)
+  },
+
   _normalizeRegionForModal(raw) {
     if (!raw || typeof raw !== 'object') return raw
     const src = raw.properties || raw.attributes || raw.store || raw
@@ -546,6 +667,7 @@ Page({
     out.description = pick(['description','desc','detail','summary','info'])
     out.type = pick(['type','facility_type','category'])
     out.facility_type = out.type
+    out.type_code = pick(['type_code','type_id','event_type','event_type_code','category_code','category_id','other_type','other_type_code','otherarea_type','otherarea_type_code'])
     out.logo_url = pick(['logo_url','image_url','image','logo','thumbnail'])
     out.image_url = out.logo_url
     out.organizer = pick(['organizer','organizer_name','organizerName','owner','owner_name','ownerName','contact_person','contact_name','manager'])
@@ -580,6 +702,7 @@ Page({
     out.is_shop = !!(out.store_name || out.type === 'store' || out.type === 'shop' || raw.is_shop)
     // include original object for any extra fields
     out._raw = raw
+    out.type_display = this._getRegionTypeDisplay(out)
     return out
   },
 
@@ -596,7 +719,10 @@ Page({
   },
 
   // modal close
-  closeRegionModal() { this.setData({ showRegionModal: false, activeRegion: null }) },
+  closeRegionModal() {
+    this._lockScrollTop = null
+    this.setData({ showRegionModal: false, activeRegion: null })
+  },
 
   // 跳转到完整活动页
   openActivityList() {
