@@ -1,9 +1,12 @@
+import base64
+import io
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .serializers import get_storearea_serializer, get_event_serializer, get_eventarea_serializer, get_otherarea_serializer, get_facility_serializer
-from .services import StoreareaService, EventService, EventareaService, OtherareaService, FacilityService
+from rest_framework.parsers import JSONParser
+from .serializers import get_storearea_serializer, get_event_serializer, get_eventarea_serializer, get_otherarea_serializer, get_facility_serializer, get_map_serializer
+from .services import StoreareaService, EventService, EventareaService, OtherareaService, FacilityService, MapEditorService
 
 
 class StoreareaViewSet(viewsets.ModelViewSet):
@@ -466,3 +469,52 @@ class FacilityViewSet(viewsets.ModelViewSet):
     def destroy(self, request, pk=None):
         FacilityService.delete_facility(pk)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MapEditorViewSet(viewsets.ViewSet):
+    """
+    地图创建与编辑视图
+    POST /api/editor/map/
+    """
+    # 既然前端改用 JSON，这里只需要 JSONParser
+    parser_classes = (JSONParser,)
+
+    def create(self, request):
+        building_id = request.data.get('building_id')
+        floor_number = request.data.get('floor_number')
+
+        # 获取 Base64 字符串 (格式通常为 "data:application/dxf;base64,......")
+        file_data_url = request.data.get('file_data')
+
+        if not building_id or not floor_number:
+            return Response({"error": "缺少建筑ID或楼层号"}, status=status.HTTP_400_BAD_REQUEST)
+
+        dxf_file_stream = None
+        if file_data_url:
+            try:
+                # 1. 分离头部 (如果有) 和 内容
+                if ',' in file_data_url:
+                    header, data_str = file_data_url.split(',', 1)
+                else:
+                    data_str = file_data_url
+
+                # 2. Base64 解码
+                file_bytes = base64.b64decode(data_str)
+
+                # 3. 转为二进制流 (BytesIO 实现了 read() 方法，ezdxf 可直接读取)
+                dxf_file_stream = io.BytesIO(file_bytes)
+                # 为了让 ezdxf 读取文本模式更安全，有时需要 TextIOWrapper，
+                # 但 ezdxf.read() 通常也能处理 bytes。我们先传 bytes stream。
+
+            except Exception as e:
+                return Response({"error": f"文件解析失败: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 调用 Service (Service 逻辑无需修改，它只关心传入的对象有 read() 方法)
+            new_map = MapEditorService.create_map(building_id, floor_number, dxf_file_stream)
+
+            Serializer = get_map_serializer()
+            return Response(Serializer(new_map).data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

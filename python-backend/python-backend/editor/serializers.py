@@ -62,3 +62,11 @@ def get_facility_serializer():
             fields = '__all__'
 
     return FacilitySerializer
+
+def get_map_serializer():
+    Map = apps.get_model('core', 'Map')
+    class MapSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Map
+            fields = '__all__'
+    return MapSerializer

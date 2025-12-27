@@ -9,6 +9,7 @@ router.register(r'event', views.EventViewSet, basename='editor_event')
 router.register(r'eventarea', views.EventareaViewSet, basename='editor_eventarea')
 router.register(r'otherarea', views.OtherareaViewSet, basename='editor_otherarea')
 router.register(r'facility', views.FacilityViewSet, basename='editor_facility')
+router.register(r'map', views.MapEditorViewSet, basename='editor_map')
 
 urlpatterns = [
     # 包含路由器生成的所有URL

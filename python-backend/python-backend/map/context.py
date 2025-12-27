@@ -28,6 +28,18 @@ class MapContext(BaseContext):
         """获取所有地图列表，并预加载建筑信息"""
         return self.model.objects.select_related('building').all()
 
+    def check_exists(self, building_id, floor_number):
+        """检查特定楼层是否存在"""
+        return self.model.objects.filter(building_id=building_id, floor_number=floor_number).exists()
+
+    def create_map_record(self, building_id, floor_number, geometry):
+        """创建地图记录"""
+        return self.create(
+            building_id=building_id,
+            floor_number=floor_number,
+            detail=geometry
+        )
+
 class ElementContext:
     """负责处理具体的商铺、设施等元素"""
 
