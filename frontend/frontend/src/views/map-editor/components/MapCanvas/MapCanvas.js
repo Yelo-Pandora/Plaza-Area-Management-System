@@ -3,6 +3,13 @@ import { useMapEditorStore } from '../../composables/useMapEditorStore'
 import * as managementAPI from '@/api/management'
 import * as KonvaImport from 'konva'
 
+// --- 引入 SVG 图标 ---
+import elevatorIcon from '@/assets/icons/elevator.svg'
+import restroomIcon from '@/assets/icons/restroom.svg'
+import exitIcon from '@/assets/icons/exit.svg'
+import infoIcon from '@/assets/icons/info.svg'
+import otherIcon from '@/assets/icons/other.svg'
+
 // --- 1. Konva 导入兼容性处理 ---
 const getKonva = () => {
   let k = KonvaImport
@@ -31,34 +38,72 @@ export function useCanvasLogic(stageContainerRef) {
   } = useMapEditorStore()
 
   let stage = null
-  let layer = null       // 背景层
-  let baseLayer = null   // 底图层
-  let shapesLayer = null // 业务层
+  let layer = null
+  let baseLayer = null
+  let shapesLayer = null
 
   const typeColors = {
     storearea: '#2563eb',
     eventarea: '#16a34a',
     otherarea: '#f97316',
-    facility: '#8b5cf6',
+  }
+
+  // --- 图片资源管理 ---
+  const iconImages = {} // 存储加载好的 Image 对象
+  const iconSources = {
+    0: elevatorIcon,
+    1: restroomIcon,
+    2: exitIcon,
+    3: infoIcon,
+    4: otherIcon
+  }
+
+  // 预加载图标函数
+  const loadIcons = () => {
+    const promises = Object.keys(iconSources).map(type => {
+      return new Promise((resolve) => {
+        const img = new Image()
+        img.src = iconSources[type]
+        img.onload = () => {
+          iconImages[type] = img
+          resolve()
+        }
+        img.onerror = () => {
+          console.warn(`Failed to load icon for type ${type}`)
+          resolve() // 即使失败也resolve，避免阻塞
+        }
+      })
+    })
+    // 图标加载完成后重绘一次，防止初次渲染为空白
+    Promise.all(promises).then(() => {
+      if (shapesLayer) shapesLayer.batchDraw()
+    })
+  }
+
+  // 立即开始加载图标
+  loadIcons()
+
+  // --- 设施类型样式映射 ---
+  // 保留背景颜色，移除 label 和 emoji，改用 iconKey
+  const facilityStyles = {
+    0: { color: '#3b82f6' }, // 电梯 - 蓝
+    1: { color: '#ec4899' }, // 卫生间 - 粉
+    2: { color: '#10b981' }, // 安全出口 - 绿
+    3: { color: '#f59e0b' }, // 服务台 - 黄
+    4: { color: '#8b5cf6' }  // 其他 - 紫
   }
 
   // --- 辅助：获取区域名称 ---
   const getAreaName = (area, type) => {
     if (type === 'storearea') return area.store_name || '未命名店铺'
-
-    // 修改：Eventarea 显示类型名称
     if (type === 'eventarea') {
       const types = { 0: '普通活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
-      // 注意：area.type 可能是 0，所以不能简单的 ||
       return types[area.type] !== undefined ? types[area.type] : '活动区域'
     }
-
-    // 修改：Otherarea 显示类型名称
     if (type === 'otherarea') {
-      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他' }
+      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他区域' }
       return types[area.type] !== undefined ? types[area.type] : '其他区域'
     }
-
     if (type === 'facility') return area.description || '设施'
     return ''
   }
@@ -167,10 +212,8 @@ export function useCanvasLogic(stageContainerRef) {
     const color = typeColors[type]
     const isSelected = selectedFeature.value?.id === area.id && selectedType.value === type
 
-    // 1. 计算包围盒和中心点
     const bounds = getBoundingBox(absolutePoints)
 
-    // 2. 创建 Group，位置设为几何中心
     const group = new Konva.Group({
       x: bounds.centerX,
       y: bounds.centerY,
@@ -178,14 +221,12 @@ export function useCanvasLogic(stageContainerRef) {
       id: `${type}-${area.id}`
     })
 
-    // 3. 将绝对坐标转换为相对于 Group 中心 (0,0) 的相对坐标
     const relativePoints = []
     for (let i = 0; i < absolutePoints.length; i += 2) {
       relativePoints.push(absolutePoints[i] - bounds.centerX)
       relativePoints.push(absolutePoints[i+1] - bounds.centerY)
     }
 
-    // 4. 创建图形 (Polygon)
     const poly = new Konva.Line({
       points: relativePoints,
       closed: true,
@@ -199,10 +240,7 @@ export function useCanvasLogic(stageContainerRef) {
       name: 'feature-shape'
     })
 
-    // 5. 创建文字 (Text)
     const areaName = getAreaName(area, type)
-
-    // 根据包围盒大小计算字体，确保能放入框内
     const fontSize = Math.min(bounds.width, bounds.height) / 4
 
     const text = new Konva.Text({
@@ -220,14 +258,11 @@ export function useCanvasLogic(stageContainerRef) {
       wrap: 'none',
       listening: false,
     })
-
     text.scale({ x: 1, y: 1 })
 
-    // 6. 组装
     group.add(poly)
     group.add(text)
 
-    // 7. 事件绑定
     group.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature(type, area)
@@ -260,7 +295,7 @@ export function useCanvasLogic(stageContainerRef) {
     shapesLayer.add(group)
   }
 
-  // 绘制设施 (点/圆)
+  // 绘制设施 (图标+圆形背景)
   const drawFacility = (facility) => {
     let x = 0, y = 0
     if (facility.location && typeof facility.location.x === 'number') {
@@ -273,9 +308,14 @@ export function useCanvasLogic(stageContainerRef) {
       return
     }
 
-    const color = typeColors['facility']
-    const radius = 5 / (stage ? stage.scaleX() : 1)
+    // 1. 根据类型获取样式配置
+    const type = facility.type || 4 // 默认其他
+    const style = facilityStyles[type] || facilityStyles[4]
     const isSelected = selectedFeature.value?.id === facility.id && selectedType.value === 'facility'
+
+    // 2. 计算半径
+    const baseRadius = 12
+    const radius = baseRadius / (stage ? stage.scaleX() : 1)
 
     const group = new Konva.Group({
       x: x,
@@ -284,29 +324,63 @@ export function useCanvasLogic(stageContainerRef) {
       id: `facility-${facility.id}`
     })
 
+    // 3. 背景圆
     const circle = new Konva.Circle({
       x: 0,
       y: 0,
-      radius: Math.max(radius, 2),
-      fill: color,
+      radius: radius,
+      fill: style.color,
       stroke: isSelected ? 'yellow' : 'white',
-      strokeWidth: isSelected ? 2 : 1,
-      shadowBlur: isSelected ? 5 : 0
+      strokeWidth: (isSelected ? 3 : 1) / (stage ? stage.scaleX() : 1),
+      shadowColor: 'black',
+      shadowBlur: isSelected ? 10 : 0,
+      shadowOpacity: 0.3
     })
-
-    // 设施文字已移除
 
     group.add(circle)
 
+    // 4. SVG 图标 (Konva.Image)
+    const imgObj = iconImages[type]
+    if (imgObj) {
+      // 图标大小设为圆直径的 60% 左右，居中显示
+      const iconSize = radius * 1.4
+      const icon = new Konva.Image({
+        image: imgObj,
+        width: iconSize,
+        height: iconSize,
+        x: -iconSize / 2,
+        y: -iconSize / 2,
+        listening: false
+      })
+      group.add(icon)
+    } else {
+      // 图片还没加载出来，或者加载失败，可以画个简单的占位符或保持空白
+      // 这里如果 loadIcons 是异步的，可能第一次绘制时没有图片，
+      // 但 loadIcons 完成后的 batchDraw 会补上
+    }
+
+    // 事件绑定
     group.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature('facility', facility)
+    })
+
+    group.on('mouseenter', () => {
+      stage.container().style.cursor = 'pointer'
+    })
+
+    group.on('mouseleave', () => {
+      stage.container().style.cursor = 'default'
     })
 
     group.on('dragend', function() {
       facility.location = { x: this.x(), y: this.y() }
       console.log(`[Save] 设施移动到: ${this.x()}, ${this.y()}`)
     })
+
+    if (isSelected) {
+      group.moveToTop()
+    }
 
     shapesLayer.add(group)
   }
@@ -325,11 +399,9 @@ export function useCanvasLogic(stageContainerRef) {
 
   // --- 4. 数据保存逻辑 (适配 Group 模式) ---
   const handleGroupDragEnd = async (type, area, groupNode, relativePoints) => {
-    // 获取 Group 移动后的新中心点绝对坐标
     const centerX = groupNode.x()
     const centerY = groupNode.y()
 
-    // 还原回绝对坐标数组
     const newCoords = []
     for (let i = 0; i < relativePoints.length; i += 2) {
       newCoords.push([
@@ -338,7 +410,6 @@ export function useCanvasLogic(stageContainerRef) {
       ])
     }
 
-    // 确保闭合
     if (newCoords.length > 0) {
       const start = newCoords[0]
       const end = newCoords[newCoords.length - 1]
@@ -347,22 +418,7 @@ export function useCanvasLogic(stageContainerRef) {
       }
     }
 
-    // 更新本地数据引用
     area.geometry = { type: 'Polygon', coordinates: [newCoords] }
-
-    console.log(`[Save] 更新 ${type} ID:${area.id} 几何数据`)
-
-    // 调用 API 保存
-    try {
-      const apiMap = {
-        storearea: managementAPI.updateManagementStorearea,
-        eventarea: managementAPI.updateManagementEventarea,
-        otherarea: managementAPI.updateManagementOtherarea
-      }
-      // 实际项目中需替换为 editorAPI.updateShape 等允许更新几何的接口
-    } catch (e) {
-      console.error('保存失败', e)
-    }
   }
 
   // --- 5. 初始化逻辑 ---
@@ -422,19 +478,24 @@ export function useCanvasLogic(stageContainerRef) {
         y: pointer.y - mousePointTo.y * newScale,
       }
       stage.position(newPos)
+
+      // 缩放后重绘
+      drawAllFeatures()
     })
 
     drawBaseMap()
     drawAllFeatures()
     autoFitView()
+    drawAllFeatures() //第二次重绘解决刚绘图时图标大小异常的问题
   }
 
+  // --- 6. 响应式监听 ---
   watchPostEffect(() => {
     const isReady = currentMap.value && stageContainerRef.value && !loading.value
     if (isReady) {
       const isStageValid = stage && stage.container() === stageContainerRef.value
 
-      if (!isStageValid || stage.attrs.mapId !== currentMap.value.id){
+      if (!isStageValid || stage.attrs.mapId !== currentMap.value.id) {
         initKonva()
         if (stage) stage.attrs.mapId = currentMap.value.id
       } else {
