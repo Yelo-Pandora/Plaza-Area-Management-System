@@ -155,7 +155,7 @@ Page({
       // draw
       setTimeout(() => this.drawMap(), 50)
       // fetch facilities for this map/floor
-      this.fetchFacilitiesForMap(map.id)
+      //this.fetchFacilitiesForMap(map.id)
     }).catch(err => console.error('加载地图详情失败', err))
   },
 

@@ -5,34 +5,31 @@ Page({
     keyword: '',
     storeResults: [],
     eventResults: [],
-    searchTypes: ["全部", "活动", "商铺"],
+    searchTypes: ["全部", "活动", "店铺"],
     typeIndex: 0,
     hasSearched: false, // 标记是否执行过搜索动作
-    placeholderList: ['搜索商铺或者活动名称', '请输入活动名称', '请输入商铺名称'],
+    placeholderList: ['搜索店铺或者活动名称', '请输入活动名称', '请输入店铺名称'],
     // 弹窗相关状态
     showModal: false,
     modalType: '', // 'store' 或 'event'
     modalDetail: null,
     modalLoading: false,
-    modalRelatedStoreareas: [], // 活动详情，存放关联的商铺区域详情
+    modalRelatedStoreareas: [], // 活动详情，存放关联的店铺区域详情
     modalRelatedEventareas: [], // 活动详情，存放关联的活动区域详情
-    modalRelatedEvents: [], // 商铺详情，存放商铺关联的活动列表
-    // 商铺种类映射关系
+    modalRelatedEvents: [], // 店铺详情，存放店铺关联的活动列表
+    // 店铺种类映射关系
     storeTypeMap: {
-      '0': '其他',
-      '1': '美食',
-      '2': '影视',
-      '3': '服装',
-      '4': '游戏',
-      '5': '玩具'
+      '0': '普通店铺',
+      '1': '餐饮',
+      '2': '服饰',
+      '3': '娱乐',
+      '4': '服务'
     },
     eventTypeMap: {
-      '0': '其他',
+      '0': '通用活动区域',
       '1': '促销活动',
-      '2': '品牌活动',
-      '3': '主题活动',
-      '4': '会员活动',
-      '5': '新品发布'
+      '2': '展览活动',
+      '3': '表演活动',
     },
   },
 
@@ -158,8 +155,8 @@ Page({
     try {
       // 用于存放异步任务的列表
       const tasks = [];
-      // 搜索商铺
-      if (currentType === '全部' || currentType === '商铺') {
+      // 搜索店铺
+      if (currentType === '全部' || currentType === '店铺') {
         tasks.push(util.apiRequest(`/search/storearea/search/?name=${encodeURIComponent(kw)}`).then(res => {
           this.setData({ storeResults: res || [] });
         }));
@@ -169,7 +166,7 @@ Page({
       if (currentType === '全部' || currentType === '活动') {
         tasks.push(util.apiRequest(`/search/event/search/?name=${encodeURIComponent(kw)}`).then(async res => {
           let list = res || [];
-          // 重点：对搜索结果中的每个活动进行分类补全
+          // 对搜索结果中的每个活动进行分类补全
           const processedList = await Promise.all(list.map(async it => {
             const normalized = this.normalizeEvent(it);
             return await this.fillEventLabel(normalized);
@@ -188,7 +185,7 @@ Page({
   },
 
   // 弹窗逻辑
-  // 打开商铺详情
+  // 打开店铺详情
    async openStore(e) {
     const id = e.currentTarget.dataset.id;
     const item = this.data.storeResults.find(x => x.id === id);
@@ -276,25 +273,37 @@ Page({
     });
   },
 
-  // TODO: 以下跳转到地图的接口还需详细修改
-  openInMap() {
-    const shape = this.data.modalDetail.shape;
-    if (!shape) {
-      wx.showToast({ title: '该商铺暂无位置数据', icon: 'none' });
+  // 跳转到地图的函数
+  openInMap(e) {
+    // 获取参数
+    const { shape, type, areaid } = e.currentTarget.dataset;
+    if (!shape || !areaid) {
+      wx.showToast({ title: '该区域位置数据异常', icon: 'none' });
       return;
     }
-    // 直接存入本地缓存，key 叫 'mapTarget'
-    wx.setStorageSync('mapTarget', {
-      // type:'store',
-      // name: this.data.modalDetail.store_name,
-      geometry: shape
-    });
-    // 跳转到 TabBar 页面
-    wx.switchTab({
-      url: '/pages/navigation/index',
-      fail: (err) => {
-        console.error('跳转失败：', err);
+    // 调用后端接口获取所在地图的 id
+    util.apiRequest(`/search/${type}/${areaid}/map/`).then(res => {
+      // 兼容处理返回的 map_id
+      const mapId = Array.isArray(res.map_ids) ? res.map_ids[0] : res.map_ids;
+      if (!mapId) {
+        wx.showToast({ title: '关联地图不存在', icon: 'none' });
+        return;
       }
+      // 存入本地缓存供 navigation 页面使用
+      wx.setStorageSync('mapTarget', {
+        geometry: shape,
+        mapId: mapId
+      });
+      // 跳转到导航页面，因为 navigation 是 TabBar 页面，必须使用 switchTab
+      wx.switchTab({
+        url: '/pages/navigation/index',
+        success: () => {
+          //console.log('成功跳转至地图页面');
+        }
+      });
+    }).catch(err => {
+      console.error('获取地图ID失败', err);
+      wx.showToast({ title: '地图定位失败', icon: 'none' });
     });
   },
 })

@@ -1,15 +1,78 @@
-<!-- 导航：输入起点终点，调用后端路径规划接口 -->
 <view class="container">
-	<view class="section">
-		<view class="row"><input placeholder="起点经度" bindinput="onStartX" value="{{start.x}}" /></view>
-		<view class="row"><input placeholder="起点纬度" bindinput="onStartY" value="{{start.y}}" /></view>
-		<view class="row"><input placeholder="终点经度" bindinput="onEndX" value="{{end.x}}" /></view>
-		<view class="row"><input placeholder="终点纬度" bindinput="onEndY" value="{{end.y}}" /></view>
-		<button bindtap="doRoute">开始导航</button>
+	<view class="map-area">
+		<view class="map-controls">
+			<picker mode="selector" range="{{maps}}" range-key="label" value="{{selectedMapIndex}}" bindchange="onMapChange">
+				<view class="picker">楼层: {{maps[selectedMapIndex] && maps[selectedMapIndex].label || '加载中...'}}</view>
+			</picker>
+		</view>
+
+		<canvas canvas-id="mapCanvas" class="map-canvas" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtap="onCanvasTap" style="width:100%;height:450px;"/>
+
+		<view class="legend">点击图标查看详情，支持双指捏合或右下角 +/- 缩放</view>
+
+		<view class="zoom-knob">
+			<view class="zoom-label" wx:if="{{showZoomPercent}}">{{zoomPercent}}%</view>
+			<view class="zoom-btn" bindtap="zoomIn">+</view>
+			<view class="zoom-btn" bindtap="zoomOut">-</view>
+		</view>
 	</view>
 
-	<view class="section" wx:if="routeResult">
-		<view class="section-title">规划结果</view>
-		<view>距离：{{routeResult.distance}} 米</view>
+	<!-- 导航控制按钮组 -->
+	<view class="nav-btn-group">
+		<view class="nav-row">
+			<view class="nav-btn {{selectionMode === 'start' ? 'active' : ''}} {{selectionMode === 'end' ? 'disabled' : ''}}" bindtap="toggleSelectStart">
+				{{selectionMode === 'start' ? '确认起点' : '选择起点'}}
+			</view>
+			<view class="nav-btn {{selectionMode === 'end' ? 'active' : ''}} {{selectionMode === 'start' ? 'disabled' : ''}}" bindtap="toggleSelectEnd">
+				{{selectionMode === 'end' ? '确认终点' : '选择终点'}}
+			</view>
+		</view>
+		<view class="nav-row">
+			<view class="nav-btn reset-btn" bindtap="resetNav">重 置</view>
+			<view class="nav-btn go-btn {{(!startPoint || !endPoint || selectionMode !== null) ? 'disabled' : ''}}" bindtap="doNavigation">导 航</view>
+		</view>
+	</view>
+
+	<!-- 弹窗逻辑-->
+	<view wx:if="{{showRegionModal}}" class="region-modal" bindtap="closeRegionModal">
+		<view class="modal-card" catchtap="none">
+			<view class="modal-body">
+				<!-- 设施弹窗：只显示一行类型 -->
+				<view wx:if="{{activeRegion.is_facility}}">
+					<view class="info-card">
+						<view class="info-pill">设施类型：{{activeRegion.facility_type}}</view>
+					</view>
+				</view>
+				<!-- 商铺视图 -->
+				<view wx:elif="{{activeRegion.is_shop}}">
+					<view class="info-card">
+						<view class="info-row">
+							<text class="info-label">商铺名</text>
+							<text class="info-value">{{activeRegion.store_name || activeRegion.name}}</text>
+						</view>
+						<view class="info-row info-row-multi">
+							<text class="info-label">详情</text>
+							<text class="info-value info-value-multi">{{activeRegion.description || '无'}}</text>
+						</view>
+					</view>
+				</view>
+				<!-- 活动区域视图 -->
+				<view wx:elif="{{activeRegion.is_event}}">
+					<view class="info-card">
+						<view class="info-row">
+							<text class="info-label">类型</text>
+							<text class="info-value">{{activeRegion.area_type || '活动区域'}}</text>
+						</view>
+						<view class="info-row info-row-multi">
+							<text class="info-label">说明</text>
+							<text class="info-value info-value-multi">{{activeRegion.description || '-'}}</text>
+						</view>
+					</view>
+				</view>
+			</view>
+			<view class="modal-actions">
+				<button bindtap="closeRegionModal">关闭</button>
+			</view>
+		</view>
 	</view>
 </view>

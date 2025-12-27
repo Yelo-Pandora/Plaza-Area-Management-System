@@ -121,9 +121,14 @@
 }
 
 .close-icon { 
-  font-size: 30rpx; 
-  color: #007aff; 
-  padding: 0rpx; 
+	color: #1890ff;
+	font-weight: 700;
+	background: #fff;
+	border: 1px solid #1890ff;
+	border-radius: 999px;
+	padding: 6px 10px;
+	font-size: 12px;
+	line-height: 1;
 }
 
 .event-main-header,

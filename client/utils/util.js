@@ -33,6 +33,7 @@ function apiRequest(path, method = 'GET', data = {}, options = {}) {
       data,
       header: Object.assign({'content-type': 'application/json'}, options.header || {}),
       withCredentials,
+      timeout:20000, // 显示指定单次请求的超时 20s 路径规划可能需要较长时间
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)
