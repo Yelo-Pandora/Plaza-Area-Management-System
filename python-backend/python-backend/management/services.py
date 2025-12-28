@@ -478,6 +478,11 @@ class StoreareaService:
         if 'shape' in data:
             del data['shape']
 
+        # 2. 验证类型是否合法
+        valid_types = [0, 1, 2, 3,4]  # 根据实际需求调整
+        if data['type'] not in valid_types:
+            raise ValueError(f"Invalid type. Valid types are: {', '.join(valid_types)}")
+
         # 布尔值转换：将字符串"true"/"false"转换为Python布尔值
         boolean_fields = ['is_active']
         for field in boolean_fields:
@@ -610,6 +615,12 @@ class FacilityService:
         for field in required_fields:
             if field not in data:
                 raise ValueError(f"Field '{field}' is required")
+
+        # 2. 验证类型是否合法
+        valid_types = [0, 1, 2, 3, 4]  # 根据实际需求调整
+        if data['type'] not in valid_types:
+            raise ValueError(f"Invalid type. Valid types are: {', '.join(valid_types)}")
+
 
         # 2. 验证类型是否合法（根据实际需求调整）
         # 这里假设type是整数类型，表示不同的设施类型
