@@ -1,6 +1,8 @@
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 from typing import Tuple, List
 from map.context import MapContext, ElementContext
+import json
+from django.contrib.gis.geos import GEOSGeometry
 
 
 # ==========================================
@@ -173,3 +175,104 @@ class MapDisplayService:
             map_obj.temp_events = []
 
         return maps
+
+    def validate_batch(self, map_id, updates_list):
+        """
+        批量校验
+        :param map_id: 地图ID
+        :param updates_list: 预处理过的列表，每项包含 'geos_obj' (GEOSGeometry)
+        :return: (is_valid, errors_list)
+        """
+        # 1. 获取地图底图 (外框和镂空)
+        map_obj = self.map_ctx.get_map_with_building(map_id)
+        if not map_obj or not map_obj.detail:
+            return False, ["地图数据缺失"]
+
+        outer_shell = map_obj.detail[0]
+        holes = list(map_obj.detail[1:]) if len(map_obj.detail) > 1 else []
+
+        # 2. 整理新数据 (不再需要解析 JSON，直接取对象)
+        new_geometries = []
+        updated_keys = set()
+
+        for item in updates_list:
+            # 直接获取 View 层解析好的几何对象
+            shape = item['geos_obj']
+
+            # 统一为多边形用于碰撞检测 (点 -> 圆)
+            collision_shape = shape.buffer(0.3) if shape.geom_type == 'Point' else shape
+
+            item_type = str(item.get('type')).lower()
+            item_id = str(item.get('id'))
+
+            new_geometries.append({
+                'id': item_id,
+                'type': item_type,
+                'shape': collision_shape,
+                'name': item.get('name', 'Unknown')
+            })
+
+            key = f"{item_type}-{item_id}"
+            updated_keys.add(key)
+
+        # 3. 从数据库获取“背景障碍物” (排除掉在 updated_keys 里的项)
+        s_ids, f_ids, o_ids, e_ids = self.map_ctx.get_map_elements(map_obj)
+        static_obstacles = []
+
+        def add_static(objects, type_name):
+            for obj in objects:
+                key = f"{type_name}-{str(obj.id)}"
+                if key not in updated_keys:
+                    shape = getattr(obj, 'shape', None)
+                    if type_name == 'facility':
+                        loc = getattr(obj, 'location', None)
+                        if loc: shape = loc.buffer(0.3)
+
+                    if shape:
+                        static_obstacles.append(shape)
+
+        add_static(self.elem_ctx.get_stores_by_ids(s_ids), 'store')
+        add_static(self.elem_ctx.get_facilities_by_ids(f_ids), 'facility')
+        add_static(self.elem_ctx.get_others_by_ids(o_ids), 'other')
+        active_events = [e for e in self.elem_ctx.get_events_by_ids(e_ids) if e.is_active]
+        add_static(active_events, 'event')
+
+        # 4. 执行校验
+        errors = []
+
+        for curr in new_geometries:
+            curr_shape = curr['shape']
+
+            # 4.1 边界检查
+            if not outer_shell.contains(curr_shape):
+                errors.append(f"[{curr['name']}] 超出地图边界")
+                continue
+
+            for hole in holes:
+                if hole.intersects(curr_shape) and not hole.touches(curr_shape):
+                    errors.append(f"[{curr['name']}] 进入了地图镂空/中庭区域")
+                    break
+
+            # 4.2 静态障碍物碰撞
+            for obs in static_obstacles:
+                if obs.intersects(curr_shape) and not obs.touches(curr_shape):
+                    errors.append(f"[{curr['name']}] 与未修改的固定区域重叠")
+                    break
+
+            # 4.3 动态物体互撞 (A 撞 B)
+            for other in new_geometries:
+                if curr['id'] == other['id'] and curr['type'] == other['type']:
+                    continue
+
+                if curr['type'] == 'facility' and other['type'] == 'facility':
+                    continue
+
+                if other['shape'].intersects(curr_shape) and not other['shape'].touches(curr_shape):
+                    if curr['id'] < other['id']:
+                        errors.append(f"[{curr['name']}] 与 [{other['name']}] 重叠")
+                    break
+
+        if len(errors) > 0:
+            return False, errors
+
+        return True, []

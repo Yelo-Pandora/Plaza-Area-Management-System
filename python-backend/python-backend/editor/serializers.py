@@ -50,3 +50,23 @@ def get_otherarea_serializer():
             fields = '__all__'
     
     return OtherareaSerializer
+
+
+def get_facility_serializer():
+    """获取设施序列化器"""
+    Facility = apps.get_model('core', 'Facility')
+
+    class FacilitySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Facility
+            fields = '__all__'
+
+    return FacilitySerializer
+
+def get_map_serializer():
+    Map = apps.get_model('core', 'Map')
+    class MapSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Map
+            fields = '__all__'
+    return MapSerializer

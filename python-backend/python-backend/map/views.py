@@ -69,3 +69,55 @@ class MapValidationView(APIView):
         is_valid, reason = service.validate_geometry(shape, map_id, exclude_id, area_type)
 
         return Response({"valid": is_valid, "reason": reason})
+
+
+class MapBatchValidationView(APIView):
+    """POST /api/maps/validate_batch/ (批量校验)"""
+    service_class = MapDisplayService
+
+    def post(self, request):
+        service = self.service_class()
+
+        map_id = request.data.get('map_id')
+        updates = request.data.get('updates', [])
+
+        if not map_id:
+            return Response({"error": "map_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # --- 数据预处理：在 View 层统一解析几何并修正 SRID ---
+        processed_updates = []
+        for i, item in enumerate(updates):
+            try:
+                # 1. 提取原始数据
+                raw_geo = item.get('geometry') or item.get('location')
+                if not raw_geo: continue
+
+                # 2. 转字符串
+                shape_str = json.dumps(raw_geo) if isinstance(raw_geo, dict) else raw_geo
+
+                # 3. 解析几何
+                shape = GEOSGeometry(shape_str)
+
+                # 4. 强制修正 SRID (与 MapValidationView 保持一致)
+                if shape.srid != 2385:
+                    shape.srid = 2385
+
+                # 5. 将处理好的 GEOSGeometry 对象注入 item
+                # 使用一个新的 key 'geos_obj' 传递给 Service
+                item['geos_obj'] = shape
+                processed_updates.append(item)
+
+            except Exception as e:
+                # 如果解析失败，直接返回 400，中断处理
+                return Response(
+                    {"error": f"Invalid geometry at index {i} (ID: {item.get('id')}): {str(e)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 调用 Service，传入包含 GEOSGeometry 对象的列表
+        is_valid, errors = service.validate_batch(map_id, processed_updates)
+
+        return Response({
+            "valid": is_valid,
+            "errors": errors
+        })

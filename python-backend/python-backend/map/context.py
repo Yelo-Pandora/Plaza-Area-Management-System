@@ -28,6 +28,23 @@ class MapContext(BaseContext):
         """获取所有地图列表，并预加载建筑信息"""
         return self.model.objects.select_related('building').all()
 
+    def check_exists(self, building_id, floor_number):
+        """检查特定楼层是否存在"""
+        return self.model.objects.filter(building_id=building_id, floor_number=floor_number).exists()
+
+    def create_map_record(self, building_id, floor_number, geometry):
+        """创建地图记录"""
+        return self.create(
+            building_id=building_id,
+            floor_number=floor_number,
+            detail=geometry
+        )
+
+    def delete_map(self, map_id):
+        """删除地图"""
+        # 使用 BaseContext 的 delete 方法需传入实例，或者直接在这里过滤删除
+        self.model.objects.filter(pk=map_id).delete()
+
 class ElementContext:
     """负责处理具体的商铺、设施等元素"""
 

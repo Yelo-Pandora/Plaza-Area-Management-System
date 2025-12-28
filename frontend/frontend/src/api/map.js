@@ -25,3 +25,9 @@ export function validateGeometry(payload) {
   })
 }
 
+export function validateBatchGeometry(payload) {
+  return request('api/maps/validate_batch/', {
+    method: 'POST',
+    body: payload
+  })
+}

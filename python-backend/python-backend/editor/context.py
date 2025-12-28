@@ -9,6 +9,8 @@ from core.models import (
     EventareaMap,
     Otherarea,
     OtherareaMap,
+    Facility,
+    FacilityMap
 )
 
 
@@ -70,6 +72,12 @@ class StoreareaContext:
     def delete(storearea_id):
         """删除店铺区域"""
         Storearea.objects.filter(id=storearea_id).delete()
+
+    @staticmethod
+    def delete_many(storearea_ids):
+        """批量删除店铺区域"""
+        if storearea_ids:
+            Storearea.objects.filter(id__in=storearea_ids).delete()
 
     @staticmethod
     def get_events_by_storearea(storearea_id):
@@ -186,6 +194,12 @@ class EventareaContext:
         """删除活动区域"""
         Eventarea.objects.filter(id=eventarea_id).delete()
 
+    @staticmethod
+    def delete_many(eventarea_ids):
+        """批量删除活动区域"""
+        if eventarea_ids:
+            Eventarea.objects.filter(id__in=eventarea_ids).delete()
+
 
 class OtherareaContext:
     """
@@ -246,3 +260,63 @@ class OtherareaContext:
     def delete(otherarea_id):
         """删除其他区域"""
         Otherarea.objects.filter(id=otherarea_id).delete()
+
+    @staticmethod
+    def delete_many(otherarea_ids):
+        """批量删除其他区域"""
+        if otherarea_ids:
+            Otherarea.objects.filter(id__in=otherarea_ids).delete()
+
+
+class FacilityContext:
+    """
+    设施（Facility）的数据访问层
+    """
+
+    @staticmethod
+    def get_all():
+        return Facility.objects.all()
+
+    @staticmethod
+    def get_by_id(facility_id):
+        return Facility.objects.filter(id=facility_id).first()
+
+    @staticmethod
+    def create(location, map_id=None, type_val=None):
+        try:
+            loc_geom = GEOSGeometry(location)
+            if loc_geom.srid != 2385:
+                loc_geom.srid = 2385
+        except Exception as e:
+            raise ValueError(f"Invalid spatial data: {str(e)}")
+
+        facility = Facility.objects.create(
+            location=loc_geom,
+            type=type_val if type_val is not None else 0
+        )
+        if map_id is not None:
+            FacilityMap.objects.create(facility=facility, map_id=map_id)
+        return facility
+
+    @staticmethod
+    def update_location(facility_id, location):
+        """更新设施位置"""
+        try:
+            loc_geom = GEOSGeometry(location)
+            if loc_geom.srid != 2385:
+                loc_geom.srid = 2385
+        except Exception as e:
+            raise ValueError(f"Invalid spatial data: {str(e)}")
+
+        Facility.objects.filter(id=facility_id).update(location=loc_geom)
+        return FacilityContext.get_by_id(facility_id)
+
+    @staticmethod
+    def delete(facility_id):
+        Facility.objects.filter(id=facility_id).delete()
+
+    @staticmethod
+    def delete_many(facility_ids):
+        """批量删除设施"""
+        if facility_ids:
+            Facility.objects.filter(id__in=facility_ids).delete()

@@ -1,9 +1,12 @@
+import base64
+import io
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .serializers import get_storearea_serializer, get_event_serializer, get_eventarea_serializer, get_otherarea_serializer
-from .services import StoreareaService, EventService, EventareaService, OtherareaService
+from rest_framework.parsers import JSONParser
+from .serializers import get_storearea_serializer, get_event_serializer, get_eventarea_serializer, get_otherarea_serializer, get_facility_serializer, get_map_serializer
+from .services import StoreareaService, EventService, EventareaService, OtherareaService, FacilityService, MapEditorService
 
 
 class StoreareaViewSet(viewsets.ModelViewSet):
@@ -409,3 +412,126 @@ class OtherareaViewSet(viewsets.ModelViewSet):
                     {'error': 'Relation not found'},
                     status=status.HTTP_404_NOT_FOUND
                 )
+
+
+class FacilityViewSet(viewsets.ModelViewSet):
+    """
+    设施（Facility）的视图集
+    支持操作：更新位置 (PATCH)
+    """
+
+    def get_serializer_class(self):
+        return get_facility_serializer()
+
+    def get_queryset(self):
+        return FacilityService.get_all_facilities()
+
+    def list(self, request, *args, **kwargs):
+        facilities = FacilityService.get_all_facilities()
+        serializer = self.get_serializer(facilities, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        facility = get_object_or_404(FacilityService.get_all_facilities(), pk=pk)
+        serializer = self.get_serializer(facility)
+        return Response(serializer.data)
+
+    def partial_update(self, request, pk=None):
+        """部分更新设施（仅支持 location 属性）"""
+        if 'location' not in request.data:
+            return Response(
+                {'error': 'Only location attribute can be updated in editor module'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 检查 ID 是否存在
+        get_object_or_404(FacilityService.get_all_facilities(), pk=pk)
+
+        location = request.data.get('location')
+        updated_facility = FacilityService.update_facility_location(pk, location)
+        serializer = self.get_serializer(updated_facility)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        if 'location' not in request.data:
+            return Response(
+                {'error': 'Location is required'}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        location = request.data.get('location')
+        map_id = request.data.get('map_id')
+        type_val = request.data.get('type')
+
+        new_facility = FacilityService.create_facility(location, map_id, type_val)
+        serializer = self.get_serializer(new_facility)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, pk=None):
+        FacilityService.delete_facility(pk)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MapEditorViewSet(viewsets.ViewSet):
+    """
+    地图创建、销毁与编辑视图
+    POST /api/editor/map/
+    DELETE /api/editor/map/{id}/
+    """
+    # 既然前端改用 JSON，这里只需要 JSONParser
+    parser_classes = (JSONParser,)
+
+    def create(self, request):
+        building_id = request.data.get('building_id')
+        floor_number = request.data.get('floor_number')
+
+        # 获取 Base64 字符串 (格式通常为 "data:application/dxf;base64,......")
+        file_data_url = request.data.get('file_data')
+
+        if not building_id or not floor_number:
+            return Response({"error": "缺少建筑ID或楼层号"}, status=status.HTTP_400_BAD_REQUEST)
+
+        dxf_file_stream = None
+        if file_data_url:
+            try:
+                # 1. 分离头部 (如果有) 和 内容
+                if ',' in file_data_url:
+                    header, data_str = file_data_url.split(',', 1)
+                else:
+                    data_str = file_data_url
+
+                # 2. Base64 解码
+                file_bytes = base64.b64decode(data_str)
+
+                # 3. 转为二进制流 (BytesIO 实现了 read() 方法，ezdxf 可直接读取)
+                dxf_file_stream = io.BytesIO(file_bytes)
+                # 为了让 ezdxf 读取文本模式更安全，有时需要 TextIOWrapper，
+                # 但 ezdxf.read() 通常也能处理 bytes。我们先传 bytes stream。
+
+            except Exception as e:
+                return Response({"error": f"文件解析失败: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # 调用 Service (Service 逻辑无需修改，它只关心传入的对象有 read() 方法)
+            new_map = MapEditorService.create_map(building_id, floor_number, dxf_file_stream)
+
+            Serializer = get_map_serializer()
+            return Response(Serializer(new_map).data, status=status.HTTP_201_CREATED)
+
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        """删除指定地图及其关联数据"""
+        if not pk:
+            return Response({"error": "Map ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            MapEditorService.delete_map(pk)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            # 捕获 Service 层抛出的业务错误
+            if "不存在" in str(e):
+                return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"服务器内部错误: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

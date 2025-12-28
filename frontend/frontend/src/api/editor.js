@@ -154,3 +154,27 @@ export function removeEventareaFromEvent(eventId, eventareaId) {
   })
 }
 
+export function updateEditorFacilityLocation(id, locationGeojson) {
+  return request(`api/editor/facility/${id}/`, {
+    method: 'PATCH',
+    body: {
+      location: typeof locationGeojson === 'string' ? locationGeojson : JSON.stringify(locationGeojson)
+    }
+  })
+}
+
+export function deleteEditorFacility(id) {
+  return request(`api/editor/facility/${id}/`, { method: 'DELETE' })
+}
+
+export function createMapInEditor(data) {
+  return request('api/editor/map/', {
+    method: 'POST',
+    body: data
+  })
+}
+
+// 删除地图
+export function deleteMapInEditor(id) {
+  return request(`api/editor/map/${id}/`, { method: 'DELETE' })
+}

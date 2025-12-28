@@ -20,7 +20,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
-from map.views import MapViewSet, MapValidationView
+from map.views import MapViewSet, MapValidationView, MapBatchValidationView
 
 from guide.views import RoutePlanView
 
@@ -30,13 +30,13 @@ from management.views import AdminAuthView, AdminProfileView
 router = DefaultRouter()
 router.register(r'maps', MapViewSet, basename='map')
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('search/', include('search.urls')),
     path('api/editor/', include('editor.urls')),
     path('api/management/', include('management.urls')),
     # Uncomment the next line to enable the admin:
     #path('admin/', admin.site.urls)
     path('api/maps/validate/', MapValidationView.as_view(), name='map-validate'),
+    path('api/maps/validate_batch/', MapBatchValidationView.as_view(), name='map-validate-batch'),
     path('api/guide/route/',RoutePlanView.as_view(), name='route-plan'),
     path('api/', include(router.urls)),
     path('api/management/auth/<str:action>/', AdminAuthView.as_view(), name='admin-auth'),
