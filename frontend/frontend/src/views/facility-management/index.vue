@@ -196,8 +196,8 @@
             <div class="form-group">
               <label class="form-label">设施类型</label>
               <select v-model="formData.type" class="form-select">
-                <option value="0">电梯</option>
-                <option value="1">卫生间</option>
+                <option value="0">自动扶梯</option>
+                <option value="1">灭火器</option>
                 <option value="2">安全出口</option>
                 <option value="3">服务台</option>
                 <option value="4">其他</option>
@@ -360,8 +360,8 @@ const debounceSearch = () => {
 
 const getTypeLabel = (type) => {
   const typeMap = {
-    0: '电梯',
-    1: '卫生间',
+    0: '自动扶梯',
+    1: '灭火器',
     2: '安全出口',
     3: '服务台',
     4: '其他'

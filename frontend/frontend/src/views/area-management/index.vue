@@ -223,8 +223,8 @@
               <label class="form-label">其他区域类型</label>
               <select v-model="formData.type_id" class="form-select">
                 <option value="0">公共区域</option>
-                <option value="1">办公区域</option>
-                <option value="2">设备区域</option>
+                <option value="1">卫生间</option>
+                <option value="2">电梯间</option>
                 <option value="3">其他</option>
               </select>
             </div>
