@@ -10,7 +10,7 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "navigationBarTitleText": "XX商业广场区域管理系统",
+    "navigationBarTitleText": "广场区域管理系统",
     "navigationBarTextStyle": "black",
     "enablePullDownRefresh": false
   },
