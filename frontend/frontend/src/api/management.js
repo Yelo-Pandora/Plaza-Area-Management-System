@@ -565,6 +565,58 @@ export function updateAreaByTypeAndId(type, id, data, partial = true) {
 
 // ---------- 默认导出 ----------
 
+/**
+ * 更新设施楼层
+ * @param {number} id - 设施ID
+ * @param {number} mapId - 新的地图ID
+ * @returns {Promise}
+ */
+export function updateManagementFacilityFloor(id, mapId) {
+  return request(`api/management/facility/${id}/update-floor/`, {
+    method: 'PATCH',
+    body: { map_id: mapId }
+  })
+}
+
+/**
+ * 更新活动区域楼层
+ * @param {number} id - 活动区域ID
+ * @param {number} mapId - 新的地图ID
+ * @returns {Promise}
+ */
+export function updateManagementEventareaFloor(id, mapId) {
+  return request(`api/management/eventarea/${id}/update-floor/`, {
+    method: 'PATCH',
+    body: { map_id: mapId }
+  })
+}
+
+/**
+ * 更新店铺区域楼层
+ * @param {number} id - 店铺区域ID
+ * @param {number} mapId - 新的地图ID
+ * @returns {Promise}
+ */
+export function updateManagementStoreareaFloor(id, mapId) {
+  return request(`api/management/storearea/${id}/update-floor/`, {
+    method: 'PATCH',
+    body: { map_id: mapId }
+  })
+}
+
+/**
+ * 更新其他区域楼层
+ * @param {number} id - 其他区域ID
+ * @param {number} mapId - 新的地图ID
+ * @returns {Promise}
+ */
+export function updateManagementOtherareaFloor(id, mapId) {
+  return request(`api/management/otherarea/${id}/update-floor/`, {
+    method: 'PATCH',
+    body: { map_id: mapId }
+  })
+}
+
 export default {
   // 管理员认证
   adminRegister,
@@ -580,6 +632,7 @@ export default {
   updateManagementEventarea,
   partialUpdateManagementEventarea,
   deleteManagementEventarea,
+  updateManagementEventareaFloor,
 
   // 其他区域管理
   listManagementOtherareas,
@@ -588,6 +641,7 @@ export default {
   updateManagementOtherarea,
   partialUpdateManagementOtherarea,
   deleteManagementOtherarea,
+  updateManagementOtherareaFloor,
 
   // 活动管理
   listManagementEvents,
@@ -604,6 +658,7 @@ export default {
   updateManagementStorearea,
   partialUpdateManagementStorearea,
   deleteManagementStorearea,
+  updateManagementStoreareaFloor,
 
   // 设施管理
   listManagementFacilities,
@@ -612,6 +667,7 @@ export default {
   updateManagementFacility,
   partialUpdateManagementFacility,
   deleteManagementFacility,
+  updateManagementFacilityFloor,
 
   // 批量操作和辅助函数
   batchUpdateAreaStatus,

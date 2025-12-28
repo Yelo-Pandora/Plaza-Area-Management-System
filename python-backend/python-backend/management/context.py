@@ -1,4 +1,4 @@
-from core.models import Eventarea, Otherarea, Event, Storearea, Facility,Admin
+from core.models import Eventarea, Otherarea, Event, Storearea, Facility, Admin, EventareaMap, StoreareaMap, OtherareaMap, FacilityMap
 from core.context import BaseContext
 
 class EventareaContext:
@@ -71,6 +71,20 @@ class EventareaContext:
             eventarea_id: 活动区域ID
         """
         Eventarea.objects.filter(id=eventarea_id).delete()
+    
+    @staticmethod
+    def update_floor(eventarea_id, new_map_id):
+        """
+        更新活动区域的楼层信息
+        
+        Args:
+            eventarea_id: 活动区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        """
+        # 删除现有的关联记录
+        EventareaMap.objects.filter(eventarea_id=eventarea_id).delete()
+        # 创建新的关联记录
+        EventareaMap.objects.create(eventarea_id=eventarea_id, map_id=new_map_id)
 
 
 class EventContext:
@@ -217,6 +231,20 @@ class StoreareaContext:
             storearea_id: 店铺区域ID
         """
         Storearea.objects.filter(id=storearea_id).delete()
+    
+    @staticmethod
+    def update_floor(storearea_id, new_map_id):
+        """
+        更新店铺区域的楼层信息
+        
+        Args:
+            storearea_id: 店铺区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        """
+        # 删除现有的关联记录
+        StoreareaMap.objects.filter(storearea_id=storearea_id).delete()
+        # 创建新的关联记录
+        StoreareaMap.objects.create(storearea_id=storearea_id, map_id=new_map_id)
 
 
 class OtherareaContext:
@@ -289,6 +317,20 @@ class OtherareaContext:
             otherarea_id: 其他区域ID
         """
         Otherarea.objects.filter(id=otherarea_id).delete()
+    
+    @staticmethod
+    def update_floor(otherarea_id, new_map_id):
+        """
+        更新其他区域的楼层信息
+        
+        Args:
+            otherarea_id: 其他区域ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        """
+        # 删除现有的关联记录
+        OtherareaMap.objects.filter(otherarea_id=otherarea_id).delete()
+        # 创建新的关联记录
+        OtherareaMap.objects.create(otherarea_id=otherarea_id, map_id=new_map_id)
 
 
 class FacilityContext:
@@ -362,6 +404,20 @@ class FacilityContext:
             facility_id: 设施ID
         """
         Facility.objects.filter(id=facility_id).delete()
+    
+    @staticmethod
+    def update_floor(facility_id, new_map_id):
+        """
+        更新设施的楼层信息
+        
+        Args:
+            facility_id: 设施ID
+            new_map_id: 新的地图ID，用于更新楼层信息
+        """
+        # 删除现有的关联记录
+        FacilityMap.objects.filter(facility_id=facility_id).delete()
+        # 创建新的关联记录
+        FacilityMap.objects.create(facility_id=facility_id, map_id=new_map_id)
 
 class AdminContext(BaseContext):
     """针对 Admin 模型的基础 CRUD 和查询操作"""

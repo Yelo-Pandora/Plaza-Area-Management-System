@@ -4,9 +4,6 @@
     <div class="header">
       <h1 class="title">区域管理</h1>
       <div class="actions">
-        <button class="btn btn-primary" @click="handleCreate">
-          <span class="btn-icon">+</span> 新建区域
-        </button>
       </div>
     </div>
 
@@ -80,13 +77,12 @@
     <div class="table-container">
       <div class="table-header">
         <div class="table-row header-row">
-          <div class="table-cell" style="flex: 0.5;">ID</div>
-          <div class="table-cell" style="flex: 1.5;">名称</div>
-          <div class="table-cell" style="flex: 1;">类型</div>
-          <div class="table-cell" style="flex: 1;">地图楼层</div>
-          <div class="table-cell" style="flex: 0.8;">状态</div>
-          <div class="table-cell" style="flex: 1.5;">创建时间</div>
-          <div class="table-cell" style="flex: 1.2;">操作</div>
+          <div class="table-cell" style="flex: 0.8;">ID</div>
+          <div class="table-cell" style="flex: 2;">名称</div>
+          <div class="table-cell" style="flex: 1.2;">类型</div>
+          <div class="table-cell" style="flex: 1.2;">地图楼层</div>
+          <div class="table-cell" style="flex: 1;">状态</div>
+          <div class="table-cell" style="flex: 1.6;">操作</div>
         </div>
       </div>
 
@@ -107,30 +103,28 @@
             :key="`${area.type}-${area.id}`"
             class="table-row data-row"
           >
-            <div class="table-cell" style="flex: 0.5;">{{ area.id }}</div>
-            <div class="table-cell" style="flex: 1.5;">
+            <div class="table-cell" style="flex: 0.8;">{{ area.id }}</div>
+            <div class="table-cell" style="flex: 2;">
               <span class="area-name">{{ area.name || (area.store_name || area.event_name) || '未命名' }}</span>
             </div>
-            <div class="table-cell" style="flex: 1;">
+            <div class="table-cell" style="flex: 1.2;">
               <span :class="['type-badge', getTypeClass(area.type)]">
                 {{ getTypeLabel(area) }}
               </span>
             </div>
-            <div class="table-cell" style="flex: 1;">
+            <div class="table-cell" style="flex: 1.2;">
               <span v-if="area.map_id" class="map-info">
                 楼层 {{ getMapFloor(area.map_id) }}
               </span>
               <span v-else class="text-muted">未分配</span>
             </div>
-            <div class="table-cell" style="flex: 0.8;">
+            <div class="table-cell" style="flex: 1;">
               <span :class="['status-badge', area.is_active ? 'active' : 'inactive']">
                 {{ area.is_active ? '启用' : '停用' }}
               </span>
             </div>
-            <div class="table-cell" style="flex: 1.5;">
-              {{ formatDate(area.created_at) }}
-            </div>
-            <div class="table-cell actions-cell" style="flex: 1.2;">
+
+            <div class="table-cell actions-cell" style="flex: 1.6;">
               <button class="action-btn edit-btn" @click="handleEdit(area)">
                 编辑
               </button>
@@ -229,8 +223,8 @@
               <label class="form-label">其他区域类型</label>
               <select v-model="formData.type_id" class="form-select">
                 <option value="0">公共区域</option>
-                <option value="1">办公区域</option>
-                <option value="2">设备区域</option>
+                <option value="1">卫生间</option>
+                <option value="2">电梯间</option>
                 <option value="3">其他</option>
               </select>
             </div>
@@ -459,7 +453,11 @@ const loadStoreareas = async () => {
   try {
     const response = await managementAPI.listManagementStoreareas()
     const storeareas = response.data || response
-    return storeareas.map(item => ({ ...item, type: 'storearea' }))
+    return storeareas.map(item => ({
+      ...item,
+      type: 'storearea',
+      store_type: item.type  // 将后端type字段映射到前端store_type字段
+    }))
   } catch (error) {
     console.error('加载店铺区域失败:', error)
     return []
@@ -481,7 +479,11 @@ const loadEventareas = async () => {
   try {
     const response = await managementAPI.listManagementEventareas()
     const eventareas = response.data || response
-    return eventareas.map(item => ({ ...item, type: 'eventarea' }))
+    return eventareas.map(item => ({
+      ...item,
+      type: 'eventarea',
+      eventarea_type: item.type  // 将后端type字段映射到前端eventarea_type字段
+    }))
   } catch (error) {
     console.error('加载活动区域失败:', error)
     return []
@@ -492,7 +494,11 @@ const loadOtherareas = async () => {
   try {
     const response = await managementAPI.listManagementOtherareas()
     const otherareas = response.data || response
-    return otherareas.map(item => ({ ...item, type: 'otherarea' }))
+    return otherareas.map(item => ({
+      ...item,
+      type: 'otherarea'
+      // 其他区域直接使用type字段，不需要额外映射
+    }))
   } catch (error) {
     console.error('加载其他区域失败:', error)
     return []
@@ -530,13 +536,53 @@ const debounceSearch = () => {
 }
 
 const getTypeLabel = (area) => {
-  const typeMap = {
+  // 基础类型映射
+  const baseTypeMap = {
     storearea: '店铺区域',
     eventarea: '活动区域',
     otherarea: '其他区域',
     event: '活动'
   }
-  return typeMap[area.type] || area.type
+
+  // 店铺区域类型映射（对应后端type字段）
+  const storeTypeMap = {
+    1: '普通店铺',
+    2: '餐饮',
+    3: '服饰',
+    4: '娱乐',
+    5: '服务'
+  }
+
+  // 活动区域类型映射（对应后端type字段）
+  const eventareaTypeMap = {
+    1: '普通活动区域',
+    2: '促销活动',
+    3: '展览活动',
+    4: '表演活动'
+  }
+
+  // 其他区域类型映射（对应后端type字段）
+  const otherareaTypeMap = {
+    1: '公共区域',
+    2: '办公区域',
+    3: '设备区域',
+    4: '其他'
+  }
+
+  // 根据区域类型和后端type字段返回具体标签
+  switch (area.type) {
+    case 'storearea':
+      // 店铺区域使用store_type字段对应后端type
+      return `${baseTypeMap[area.type]} - ${storeTypeMap[area.store_type] || '未知类型'}`
+    case 'eventarea':
+      // 活动区域使用eventarea_type字段对应后端type
+      return `${baseTypeMap[area.type]} - ${eventareaTypeMap[area.eventarea_type] || '未知类型'}`
+    case 'otherarea':
+      // 其他区域直接使用type字段对应后端type
+      return `${baseTypeMap[area.type]} - ${otherareaTypeMap[area.type] || '未知类型'}`
+    default:
+      return baseTypeMap[area.type] || area.type
+  }
 }
 
 const getTypeClass = (type) => {
@@ -611,20 +657,28 @@ const handleEdit = async (area) => {
     const response = await managementAPI.getAreaByTypeAndId(area.type, area.id)
     const areaData = response.data || response
 
+    // 转换时间格式为datetime-local可用的格式
+    const formatForInput = (dateString) => {
+      if (!dateString) return ''
+      // 处理后端的带微秒格式：2025-12-23 04:27:42.443939
+      const date = new Date(dateString.replace(' ', 'T'))
+      return date.toISOString().slice(0, 16)
+    }
+
     // 转换数据格式
     formData.value = {
       id: areaData.id,
       type: area.type,
       name: areaData.name || areaData.store_name || areaData.event_name || '',
       map_id: areaData.map_id || '',
-      store_type: areaData.store_type?.toString() || '0',
-      type_id: areaData.type_id?.toString() || '0',
-      event_type: areaData.event_type?.toString() || '0',
+      store_type: (areaData.store_type?.toString() || areaData.type?.toString() || '0'),
+      type_id: (areaData.type_id?.toString() || areaData.type?.toString() || '0'),
+      event_type: (areaData.event_type?.toString() || areaData.type?.toString() || '0'),
       description: areaData.description || '',
       is_active: areaData.is_active !== undefined ? areaData.is_active : true,
       logo_url: areaData.logo_url || '',
-      start_time: areaData.start_time || '',
-      end_time: areaData.end_time || ''
+      start_time: formatForInput(areaData.start_time),
+      end_time: formatForInput(areaData.end_time)
     }
 
     showModal.value = true
@@ -645,6 +699,16 @@ const handleSubmit = async () => {
     // 移除前端添加的type字段（后端不需要）
     delete submitData.type
 
+    // 转换datetime-local格式到后端需要的格式：2025-12-23 04:27:42.443939
+    const formatForBackend = (dateString) => {
+      if (!dateString) return null
+      // 前端格式：2025-12-23T04:27
+      // 后端格式：2025-12-23 04:27:42.443939
+      const date = new Date(dateString)
+      // 转换为带微秒的格式，微秒部分固定为000000
+      return date.toISOString().slice(0, 19).replace('T', ' ') + '.000000'
+    }
+
     // 根据不同类型设置正确的字段名
     if (formData.value.type === 'storearea') {
       submitData.store_name = submitData.name
@@ -654,6 +718,14 @@ const handleSubmit = async () => {
       submitData.event_name = submitData.name
       delete submitData.name
       submitData.event_type = parseInt(submitData.event_type)
+      
+      // 转换时间格式
+      if (submitData.start_time) {
+        submitData.start_time = formatForBackend(submitData.start_time)
+      }
+      if (submitData.end_time) {
+        submitData.end_time = formatForBackend(submitData.end_time)
+      }
     } else if (formData.value.type === 'eventarea') {
       submitData.eventarea_type = parseInt(submitData.event_type)
       delete submitData.event_type
@@ -663,8 +735,25 @@ const handleSubmit = async () => {
     }
 
     if (isEditing.value) {
-      // 更新数据
-      await managementAPI.updateAreaByTypeAndId(formData.value.type, formData.value.id, submitData)
+      // 更新
+      if (formData.value.map_id) {
+        // 如果更改了楼层，使用专门的楼层更新API
+        const updateFloorApi = {
+          eventarea: managementAPI.updateManagementEventareaFloor,
+          storearea: managementAPI.updateManagementStoreareaFloor,
+          otherarea: managementAPI.updateManagementOtherareaFloor
+        }[formData.value.type]
+        
+        if (updateFloorApi) {
+          await updateFloorApi(formData.value.id, parseInt(formData.value.map_id))
+        }
+      }
+      
+      // 移除map_id，因为它已经通过专门的API更新了
+      delete submitData.map_id
+      
+      // 更新其他属性 - 使用PUT方法（完整更新）而不是默认的PATCH方法
+      await managementAPI.updateAreaByTypeAndId(formData.value.type, formData.value.id, submitData, false)
     } else {
       // 创建数据
       let response

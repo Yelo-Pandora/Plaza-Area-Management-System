@@ -4,9 +4,6 @@
     <div class="header">
       <h1 class="title">设施管理</h1>
       <div class="actions">
-        <button class="btn btn-primary" @click="handleCreate">
-          <span class="btn-icon">+</span> 新建设施
-        </button>
       </div>
     </div>
 
@@ -81,13 +78,12 @@
     <div class="table-container">
       <div class="table-header">
         <div class="table-row header-row">
-          <div class="table-cell" style="flex: 0.5;">ID</div>
-          <div class="table-cell" style="flex: 1.5;">名称</div>
-          <div class="table-cell" style="flex: 1;">类型</div>
-          <div class="table-cell" style="flex: 1;">地图楼层</div>
-          <div class="table-cell" style="flex: 0.8;">状态</div>
-          <div class="table-cell" style="flex: 1.5;">创建时间</div>
-          <div class="table-cell" style="flex: 1.2;">操作</div>
+          <div class="table-cell" style="flex: 0.8;">ID</div>
+          <div class="table-cell" style="flex: 2;">名称</div>
+          <div class="table-cell" style="flex: 1.2;">类型</div>
+          <div class="table-cell" style="flex: 1.2;">地图楼层</div>
+          <div class="table-cell" style="flex: 1;">状态</div>
+          <div class="table-cell" style="flex: 1.6;">操作</div>
         </div>
       </div>
 
@@ -108,30 +104,28 @@
             :key="facility.id"
             class="table-row data-row"
           >
-            <div class="table-cell" style="flex: 0.5;">{{ facility.id }}</div>
-            <div class="table-cell" style="flex: 1.5;">
+            <div class="table-cell" style="flex: 0.8;">{{ facility.id }}</div>
+            <div class="table-cell" style="flex: 2;">
               <span class="facility-name">{{ facility.description || '未命名' }}</span>
             </div>
-            <div class="table-cell" style="flex: 1;">
+            <div class="table-cell" style="flex: 1.2;">
               <span :class="['type-badge', getTypeClass(facility.type)]">
                 {{ getTypeLabel(facility.type) }}
               </span>
             </div>
-            <div class="table-cell" style="flex: 1;">
+            <div class="table-cell" style="flex: 1.2;">
               <span v-if="facility.map_id" class="map-info">
                 楼层 {{ getMapFloor(facility.map_id) }}
               </span>
               <span v-else class="text-muted">未分配</span>
             </div>
-            <div class="table-cell" style="flex: 0.8;">
+            <div class="table-cell" style="flex: 1;">
               <span :class="['status-badge', facility.is_active ? 'active' : 'inactive']">
                 {{ facility.is_active ? '启用' : '停用' }}
               </span>
             </div>
-            <div class="table-cell" style="flex: 1.5;">
-              {{ formatDate(facility.created_at) }}
-            </div>
-            <div class="table-cell actions-cell" style="flex: 1.2;">
+
+            <div class="table-cell actions-cell" style="flex: 1.6;">
               <button class="action-btn edit-btn" @click="handleEdit(facility)">
                 编辑
               </button>
@@ -202,8 +196,8 @@
             <div class="form-group">
               <label class="form-label">设施类型</label>
               <select v-model="formData.type" class="form-select">
-                <option value="0">电梯</option>
-                <option value="1">卫生间</option>
+                <option value="0">自动扶梯</option>
+                <option value="1">灭火器</option>
                 <option value="2">安全出口</option>
                 <option value="3">服务台</option>
                 <option value="4">其他</option>
@@ -366,8 +360,8 @@ const debounceSearch = () => {
 
 const getTypeLabel = (type) => {
   const typeMap = {
-    0: '电梯',
-    1: '卫生间',
+    0: '自动扶梯',
+    1: '灭火器',
     2: '安全出口',
     3: '服务台',
     4: '其他'
@@ -437,15 +431,21 @@ const handleSubmit = async () => {
     const submitData = {
       type: parseInt(formData.value.type),
       description: formData.value.description,
-      map_id: parseInt(formData.value.map_id),
       is_active: formData.value.is_active
     }
 
     if (isEditing.value) {
       // 更新
+      if (formData.value.map_id) {
+        // 如果更改了楼层，使用专门的楼层更新API
+        await managementAPI.updateManagementFacilityFloor(formData.value.id, parseInt(formData.value.map_id))
+      }
+      
+      // 更新其他属性
       await managementAPI.updateManagementFacility(formData.value.id, submitData)
     } else {
       // 创建
+      submitData.map_id = parseInt(formData.value.map_id)
       await managementAPI.createManagementFacility(submitData)
     }
 
