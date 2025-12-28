@@ -1,0 +1,10 @@
+<!-- 店铺详情 -->
+<view class="container">
+  <view class="section">
+    <view class="section-title">{{store.name || '店铺'}}</view>
+    <view class="detail-meta">类型：{{store.type_name || '-'}}</view>
+    <view class="detail-desc">{{store.description || '暂无描述'}}</view>
+    <view class="detail-meta">所属地图: {{store.map_id || '-'}}</view>
+    <button bindtap="openOnMap" wx:if="store.map_id">在地图中查看</button>
+  </view>
+</view>

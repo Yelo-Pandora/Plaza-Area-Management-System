@@ -1,1 +1,328 @@
 /* pages/activities/index.wxss */
+
+/* 覆盖全局 .container 样式，使本页面内容从顶部开始排列 */
+.container {
+	align-items: stretch;
+	justify-content: flex-start;
+	padding: 0; /* 去掉全局顶部大间距 */
+	background: #f5faff;
+}
+
+
+.section-title {
+	font-size: 20px;
+	font-weight: bold;
+	margin: 12px 16px;
+}
+
+.type-filters {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap; /* 单行 */
+	padding: 8px 12px;
+	overflow-x: auto; /* 横向可滚动 */
+	-webkit-overflow-scrolling: touch;
+	white-space: nowrap;
+}
+.type-filters::-webkit-scrollbar { display: none; }
+.chip {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: #ffffff;
+	border: 1px solid rgba(24,144,255,0.35);
+	color: #1890ff;
+	margin-right: 8px;
+	margin-bottom: 0; /* 单行无需底部间距 */
+	font-size: 12px;
+	white-space: nowrap;
+}
+.chip-selected {
+	background: #1890ff;
+	color: #fff;
+	border: 1px solid #1890ff;
+	box-shadow: 0 4px 10px rgba(24,144,255,0.22);
+}
+
+/* 吸顶筛选栏 */
+.sticky-filter {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 1000;
+	background: #fff;
+	box-shadow: 0 6px 18px rgba(17,24,39,0.06);
+	border-bottom: 1px solid rgba(24,144,255,0.10);
+}
+.sticky-spacer {
+	height: 64px; /* 与 sticky-filter 的实际高度保持一致，避免遮挡 */
+}
+
+.activity-item {
+	background: #fff;
+	border-radius: 14px;
+	padding: 10px;
+	margin: 12px 12px;
+	border: 1px solid rgba(17,24,39,0.06);
+	box-shadow: 0 10px 24px rgba(17,24,39,0.08);
+	overflow: hidden;
+	position: relative;
+	border-left: 4px solid rgba(24,144,255,0.85);
+}
+.activity-card {
+	background: #ffffff;
+	padding: 10px;
+	border-radius: 10px;
+	box-shadow: none;
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+}
+.thumb-wrap {
+	width: 76px;
+	height: 76px;
+	flex: 0 0 76px;
+	border-radius: 10px;
+	overflow: hidden;
+	margin-right: 12px;
+	background: #f3f4f6;
+	border: 1px solid rgba(17,24,39,0.08);
+}
+.thumb {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.content {
+	flex: 1 1 auto;
+}
+.title-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.act-title {
+	font-size: 16px;
+	font-weight: 700;
+	margin-bottom: 4px;
+	color: #0f172a;
+	letter-spacing: 0.2px;
+}
+.badge {
+	background: rgba(24,144,255,0.10);
+	color: #0b5fcc;
+	font-size: 11px;
+	padding: 4px 8px;
+	border-radius: 12px;
+	border: 1px solid rgba(24,144,255,0.35);
+}
+.act-desc {
+	color: #334155;
+	font-size: 13px;
+	margin: 6px 0;
+	line-height: 18px;
+}
+.desc-clamp {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+.act-time {
+	color: #64748b;
+	font-size: 12px;
+}
+.card-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 6px;
+}
+.event-status {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 999px;
+	display: inline-block;
+	min-width: 44px;
+	text-align: center;
+}
+.empty {
+	padding: 30px;
+	text-align: center;
+	color: #999;
+}
+
+/* modal */
+.modal-overlay {
+	position: fixed;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.modal {
+	width: 90%;
+	max-height: 80%;
+	background: #fff;
+	border-radius: 14px;
+	padding: 0;
+	box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 12px;
+	background: #f0f7ff;
+	border-bottom: 1px solid rgba(24,144,255,0.12);
+	flex: 0 0 auto;
+	position: relative;
+	padding-right: 44px;
+}
+.modal-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: #111;
+}
+.modal-close-x {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #1890ff;
+	font-size: 22px;
+	font-weight: 800;
+	line-height: 1;
+}
+.modal-body {
+	padding: 12px;
+	background: #fff;
+	flex: 1 1 auto;
+	overflow-y: auto;
+	-webkit-overflow-scrolling: touch;
+}
+.modal-row {
+	margin-bottom: 8px;
+	color: #333;
+}
+.area-card {
+	background: #fff;
+	border-radius: 12px;
+	padding: 12px;
+	margin-bottom: 10px;
+	box-shadow: 0 10px 22px rgba(17,24,39,0.08);
+	border: 1px solid rgba(17,24,39,0.06);
+	border-left: 3px solid rgba(24,144,255,0.55);
+}
+
+/* 区分商铺区域 vs 活动区域（不改布局，仅通过蓝白对比增强辨识） */
+.area-card-event {
+	border-left-color: rgba(24,144,255,0.95);
+	background: linear-gradient(180deg, rgba(24,144,255,0.08) 0%, #ffffff 65%);
+}
+.area-card-store {
+	/* 与活动区域同款样式，仅把强调边做成浅紫 */
+	border-left-color: rgba(124,58,237,0.85);
+	background: linear-gradient(180deg, rgba(24,144,255,0.08) 0%, #ffffff 65%);
+}
+.area-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 6px;
+}
+.area-status {
+    font-size: 13px;
+    color: #333;
+    font-weight: 600;
+}
+.area-title-row { margin-bottom: 6px; display:flex; justify-content:space-between; align-items:center; }
+.area-title {
+	font-size: 14px;
+	font-weight: 700;
+	color: #0f172a;
+}
+.area-card-event .area-title {
+	color: #0b5fcc;
+}
+.area-card-store .area-title {
+	color: #5b21b6;
+}
+.area-badge { order: 2; }
+.area-badge {
+	font-size: 11px;
+	color: #0b5fcc;
+	background: rgba(24,144,255,0.10);
+	padding: 4px 8px;
+	border-radius: 999px;
+	border: 1px solid rgba(24,144,255,0.35);
+}
+
+/* 商铺 badge：保持与活动区域一致（蓝色体系） */
+.area-card-store .area-badge {
+	color: #0b5fcc;
+	background: rgba(24,144,255,0.10);
+	border-color: rgba(24,144,255,0.35);
+}
+
+.area-badge-line { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+
+.modal-event-status {
+	font-size: 12px;
+	color: #007aff;
+	margin-left: 8px;
+}
+.area-desc {
+	font-size: 13px;
+	color: #444;
+	margin-bottom: 6px;
+	line-height: 18px;
+}
+.area-meta {
+	font-size: 12px;
+	color: #666;
+	line-height: 18px;
+}
+.area-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 8px;
+	padding-top: 8px;
+	border-top: 1px solid rgba(17,24,39,0.06);
+}
+.area-status-right {
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 8px;
+	display: inline-block;
+	min-width: 44px;
+	text-align: center;
+}
+
+/* 状态通用样式 */
+.status-enabled {
+	background: #1890ff;
+	color: #fff;
+	border: 1px solid rgba(24,144,255,0.65);
+	box-shadow: 0 6px 14px rgba(24,144,255,0.22);
+}
+.status-disabled {
+	background: #f1f5f9;
+	color: #475569;
+	border: 1px solid rgba(71,85,105,0.18);
+	box-shadow: none;
+}

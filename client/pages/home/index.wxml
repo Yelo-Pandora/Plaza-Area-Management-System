@@ -1,2 +1,132 @@
-<!--pages/home/index.wxml-->
-<text>pages/home/index.wxml</text>
+<!-- 首页：地图预览 + 推荐活动 -->
+<view class="container">
+	<view class="map-area">
+		<view class="map-controls">
+			<picker mode="selector" range="{{maps}}" range-key="label" value="{{selectedMapIndex}}" bindchange="onMapChange">
+				<view class="picker">楼层: {{maps[selectedMapIndex] && maps[selectedMapIndex].label || '加载中...'}}</view>
+			</picker>
+		</view>
+
+		<canvas canvas-id="mapCanvas" class="map-canvas" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd" bindtap="onCanvasTap" style="width:100%;height:420px;"/>
+
+		<view class="legend">点击图标查看详情，支持双指捏合或右下角 +/- 缩放</view>
+
+		<!-- 右下角浮动缩放控件 -->
+		<view class="zoom-knob">
+			<view class="zoom-label" wx:if="{{showZoomPercent}}">{{zoomPercent}}%</view>
+			<view class="zoom-btn" bindtap="zoomIn">+</view>
+			<view class="zoom-btn" bindtap="zoomOut">-</view>
+		</view>
+	</view>
+
+	<view wx:if="{{showRegionModal}}" class="region-modal" catchtouchmove="noop" catchtap="noop">
+		<view class="modal-card" catchtouchmove="noop" catchtap="noop">
+			<view class="modal-close-x" bindtap="closeRegionModal">×</view>
+			<view class="modal-body">
+				<!-- 商铺优先展示（后端可能使用 store_name 字段或 type/store 类型标识） -->
+				<view wx:if="{{activeRegion && !activeRegion.is_facility && (activeRegion.store_name || activeRegion.type === 'store' || activeRegion.is_shop)}}">
+						<view class="info-card">
+							<view class="info-row">
+								<text class="info-label">商铺名</text>
+								<text class="info-value">{{activeRegion.store_name || activeRegion.name}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.phone || activeRegion.phone_number || activeRegion.contact_phone}}">
+								<text class="info-label">联系电话</text>
+								<text class="info-value">{{activeRegion.phone || activeRegion.phone_number || activeRegion.contact_phone}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.owner_name || activeRegion.organizer_name || activeRegion.contact_person}}">
+								<text class="info-label">负责人</text>
+								<text class="info-value">{{activeRegion.owner_name || activeRegion.organizer_name || activeRegion.contact_person}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.owner_phone || activeRegion.organizer_phone || activeRegion.contact_phone}}">
+								<text class="info-label">联系方式</text>
+								<text class="info-value">{{activeRegion.owner_phone || activeRegion.organizer_phone || activeRegion.contact_phone}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.open_time || activeRegion.open || activeRegion.business_hours || activeRegion.close_time}}">
+								<text class="info-label">营业时间</text>
+								<text class="info-value">{{activeRegion.open_time || activeRegion.open || (activeRegion.business_hours ? activeRegion.business_hours : '—')}}{{activeRegion.close_time ? ' - ' + activeRegion.close_time : ''}}</text>
+							</view>
+							<view class="info-row info-row-multi">
+								<text class="info-label">详情</text>
+								<text class="info-value info-value-multi">{{activeRegion.description || activeRegion.desc || activeRegion.detail || activeRegion.summary || '无'}}</text>
+							</view>
+						</view>
+					<!-- 图片已移除：无需显示 -->
+				</view>
+				<!-- 活动区域：仅显示 类型、负责人、联系电话、详情 -->
+				<view wx:elif="{{activeRegion && (activeRegion.is_event || activeRegion.area_type === 'eventarea' || activeRegion.type === 'event' || (activeRegion._raw && (activeRegion._raw.is_event || activeRegion._raw.__kind === 'eventarea')))}}">
+						<view class="info-card">
+							<view class="info-row">
+								<text class="info-label">类型</text>
+								<text class="info-value">{{activeRegion.type_display || '活动区域'}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.organizer_name}}">
+								<text class="info-label">负责人</text>
+								<text class="info-value">{{activeRegion.organizer_name}}</text>
+							</view>
+							<view class="info-row" wx:if="{{activeRegion.organizer_phone}}">
+								<text class="info-label">联系电话</text>
+								<text class="info-value">{{activeRegion.organizer_phone}}</text>
+							</view>
+							<view class="info-row info-row-multi">
+								<text class="info-label">详情</text>
+								<text class="info-value info-value-multi">{{activeRegion.description || '-'}}</text>
+							</view>
+						</view>
+				</view>
+				<!-- 设施（point）只显示一行类型 -->
+				<view wx:elif="{{activeRegion && activeRegion.is_facility && !activeRegion.is_shop}}">
+						<view class="info-card">
+							<view class="info-pill">设施类型：{{activeRegion.type_display || activeRegion.facility_type || activeRegion.type || activeRegion.area_type}}</view>
+						</view>
+				</view>
+				<!-- 其他区域：仅显示 类型、是否为公共区域、详情 -->
+				<view wx:elif="{{activeRegion}}">
+						<view class="info-card">
+							<view class="info-row">
+								<text class="info-label">类型</text>
+								<text class="info-value">{{activeRegion.type_display || activeRegion.area_type || activeRegion.type || '-'}}</text>
+							</view>
+							<view class="info-row">
+								<text class="info-label">公共区域</text>
+								<text class="info-value">{{(activeRegion.is_public || (activeRegion._raw && activeRegion._raw.is_public)) ? '是' : '否'}}</text>
+							</view>
+							<view class="info-row info-row-multi">
+								<text class="info-label">详情</text>
+								<text class="info-value info-value-multi">{{activeRegion.description || '-'}}</text>
+							</view>
+						</view>
+				</view>
+			</view>
+		</view>
+	</view>
+
+	<view class="section">
+		<view class="section-title">推荐活动</view>
+		<block wx:if="recommended.length">
+			<block wx:for="{{recommended}}" wx:for-item="item" wx:key="id">
+				<view class="activity-item" data-id="{{item.id}}" bindtap="openActivity">
+					<view class="activity-card">
+						<view class="thumb-wrap">
+							<image class="thumb" src="{{item.image_url || '/images/default-event.png'}}" mode="cover" />
+						</view>
+						<view class="content">
+							<view class="title-row">
+								<view class="act-title">{{item.name}}</view>
+							</view>
+							<view class="act-desc desc-clamp" wx:if="{{item.description}}">{{item.description}}</view>
+							<view class="card-footer">
+								<view class="act-time">{{item.start}}{{item.end ? ' - ' + item.end : ''}}</view>
+								<view class="event-status {{item.is_ongoing ? 'status-enabled' : 'status-disabled'}}">{{item.is_ongoing ? '进行中' : '已截止'}}</view>
+							</view>
+						</view>
+					</view>
+				</view>
+			</block>
+		</block>
+		<view class="more-actions">
+			<button class="more-link" plain="true" hover-class="none" bindtap="openActivityList">查看更多活动</button>
+		</view>
+	</view>
+  
+</view>

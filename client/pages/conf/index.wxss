@@ -1,1 +1,63 @@
 /* pages/conf/index.wxss */
+
+.container {
+	padding: 12px;
+	background: #eef6ff;
+	min-height: 100vh;
+	box-sizing: border-box;
+}
+
+.section {
+	background: #fff;
+	border-radius: 12px;
+	border: 1px solid #eef6ff;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	padding: 12px;
+}
+
+/* 单行：头像 + 昵称 + 右侧按钮 */
+.row-card { display: flex; flex-direction: row; align-items: center; width: 100%; }
+
+.profile-card { width: 100%; }
+
+.avatar {
+	width: 44px;
+	height: 44px;
+	border-radius: 999rpx;
+	margin-right: 12px;
+	overflow: hidden;
+	background: #fff;
+	border: 1px solid #eef6ff;
+}
+
+.profile-info { flex: 1; display: flex; align-items: center; }
+
+.user-name {
+	font-size: 16px;
+	font-weight: 700;
+	color: #111;
+}
+
+.btn {
+	background: #1890ff;
+	color: #fff;
+	padding: 8px 12px;
+	border-radius: 10px;
+	text-align: center;
+	font-weight: 600;
+	box-shadow: 0 2px 0 rgba(0,0,0,0.04);
+}
+.btn:active { opacity: 0.92; }
+
+/* 退出属于危险操作：保持红色强调 */
+.btn.logout { margin-left: auto; width: 84px; height: 32px; font-size: 13px; background: #ff4d4f; }
+
+.login-box {
+	width: 100%;
+	background: #eef6ff;
+	border: 1px solid #1890ff;
+	border-radius: 12px;
+	padding: 14px 12px;
+	box-sizing: border-box;
+}
+.login-text { color: #1890ff; font-size: 16px; font-weight: 600; }

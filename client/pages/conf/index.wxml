@@ -1,2 +1,23 @@
-<!--pages/conf/index.wxml-->
-<text>pages/conf/index.wxml</text>
+<!-- 我的页面 -->
+<view class="container">
+	<view class="section">
+		<block wx:if="{{loggedIn && (profile && (profile.nickName || profile.account || profile.avatarUrl || profile.avatar))}}">
+			<!-- 单行：头像 + 昵称 + 右侧登出按钮 -->
+			<view class="profile-card row-card">
+				<image class="avatar" src="{{profile.avatarUrl || profile.avatar}}" mode="cover" />
+				<view class="profile-info">
+					<view class="user-name">{{profile.nickName || profile.nick || profile.name || profile.account}}</view>
+				</view>
+				<button class="btn logout" bindtap="confirmLogout">登出</button>
+			</view>
+		</block>
+
+		<block wx:if="{{!loggedIn}}">
+			<view class="login-box">
+				<view class="login-text" bindtap="doLogin">未登录，点击登录</view>
+			</view>
+		</block>
+		<!-- 占位，避免页面内容被固定顶部遮挡 -->
+		<!-- 之前的 page-spacer 用于 fixed 顶部布局；现在不需要 -->
+	</view>
+</view>
