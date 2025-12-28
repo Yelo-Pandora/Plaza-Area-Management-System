@@ -109,7 +109,7 @@ class EventareaService:
             raise ValueError("Phone number must be at least 10 characters long")
 
         # 3. 验证类型是否合法
-        valid_types = ['exhibition', 'concert', 'meeting', 'other']  # 根据实际需求调整
+        valid_types = [0, 1, 2, 3]  # 根据实际需求调整
         if data['type'] not in valid_types:
             raise ValueError(f"Invalid type. Valid types are: {', '.join(valid_types)}")
 
@@ -255,7 +255,7 @@ class OtherareaService:
                 raise ValueError(f"Field '{field}' is required")
 
         # 2. 验证类型是否合法
-        valid_types = ['restroom', 'parking', 'entrance', 'exit', 'staircase', 'elevator', 'other']  # 根据实际需求调整
+        valid_types = [0, 1, 2, 3]  # 根据实际需求调整
         if data['type'] not in valid_types:
             raise ValueError(f"Invalid type. Valid types are: {', '.join(valid_types)}")
 
