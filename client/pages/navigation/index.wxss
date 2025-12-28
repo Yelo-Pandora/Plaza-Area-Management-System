@@ -122,22 +122,78 @@
 }
 
 /* 弹窗通用样式 */
-.region-modal { 
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-  background: rgba(0,0,0,0.5); 
-  display: flex; align-items: center; justify-content: center; 
-  z-index: 999;
+.region-modal {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 5000;
 }
-.modal-card { width: 85%; background: #fff; border-radius: 12px; padding: 15px; }
-.info-card { background: #f9fcff; border: 1px solid #eef6ff; border-radius: 8px; padding: 10px; }
-.info-row { display: flex; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
-.info-label { width: 70px; font-size: 12px; color: #666; }
-.info-value { flex: 1; font-size: 13px; font-weight: 600; color: #333; }
-.info-pill { 
-  display: inline-block; padding: 4px 10px; 
-  background: #1890ff; color: #fff; 
-  border-radius: 20px; font-size: 12px; 
+.modal-card { width:86%; background:#fff; border-radius:12px; padding:12px; box-shadow: 0 8px 20px rgba(0,0,0,0.12); position: relative; }
+.modal-close-x {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	width: 28px;
+	height: 28px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: #1890ff;
+	font-size: 22px;
+	font-weight: 800;
+	line-height: 1;
 }
+.modal-title { font-weight:600; font-size:16px; margin-bottom:8px; }
+.modal-body { margin-bottom:12px; color:#111; }
+.info-card {
+	background: #fff;
+	border-radius: 10px;
+	padding: 10px;
+	border: 1px solid #eef6ff;
+	box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.info-row {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	padding: 8px 0;
+	border-bottom: 1px solid #eef6ff;
+}
+.info-row:last-child { border-bottom: none; }
+.info-label {
+	flex: 0 0 78px;
+	width: 78px;
+	font-size: 12px;
+	color: #666;
+	line-height: 18px;
+}
+.info-value {
+	flex: 1 1 auto;
+	font-size: 13px;
+	color: #111;
+	line-height: 18px;
+	font-weight: 600;
+}
+.info-row-multi { align-items: flex-start; }
+.info-value-multi { font-weight: 500; color: #333; }
+
+.info-pill {
+	display: inline-block;
+	background: #eef6ff;
+	color: #1890ff;
+	border: 1px solid #1890ff;
+	border-radius: 999px;
+	padding: 6px 10px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
 .modal-actions { margin-top: 15px; text-align: center; }
 .modal-actions button { 
   background: #fff; color: #1890ff; 

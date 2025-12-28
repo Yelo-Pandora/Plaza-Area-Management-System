@@ -38,7 +38,7 @@
 		<view class="modal-card" catchtouchmove="noop" catchtap="noop">
 			<view class="modal-close-x" bindtap="closeRegionModal">×</view>
 			<view class="modal-body">
-				<!-- 1. 商铺优先展示 -->
+				<!-- 商铺优先展示（后端可能使用 store_name 字段或 type/store 类型标识） -->
 				<view wx:if="{{activeRegion && !activeRegion.is_facility && (activeRegion.store_name || activeRegion.type === 'store' || activeRegion.is_shop)}}">
 						<view class="info-card">
 							<view class="info-row">
@@ -66,9 +66,9 @@
 								<text class="info-value info-value-multi">{{activeRegion.description || activeRegion.desc || activeRegion.detail || activeRegion.summary || '无'}}</text>
 							</view>
 						</view>
+					<!-- 图片已移除：无需显示 -->
 				</view>
-
-				<!-- 2. 活动区域视图 -->
+				<!-- 活动区域：仅显示 类型、负责人、联系电话、详情 -->
 				<view wx:elif="{{activeRegion && (activeRegion.is_event || activeRegion.area_type === 'eventarea' || activeRegion.type === 'event' || (activeRegion._raw && (activeRegion._raw.is_event || activeRegion._raw.__kind === 'eventarea')))}}">
 						<view class="info-card">
 							<view class="info-row">
@@ -89,15 +89,13 @@
 							</view>
 						</view>
 				</view>
-
-				<!-- 3. 设施（point）只显示一行类型 -->
+				<!-- 设施（point）只显示一行类型 -->
 				<view wx:elif="{{activeRegion && activeRegion.is_facility && !activeRegion.is_shop}}">
 						<view class="info-card">
 							<view class="info-pill">设施类型：{{activeRegion.type_display || activeRegion.facility_type || activeRegion.type || activeRegion.area_type}}</view>
 						</view>
 				</view>
-
-				<!-- 4. 其他区域视图 -->
+				<!-- 其他区域：仅显示 类型、是否为公共区域、详情 -->
 				<view wx:elif="{{activeRegion}}">
 						<view class="info-card">
 							<view class="info-row">

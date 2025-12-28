@@ -29,10 +29,10 @@
 	<!-- 搜索结果区域 -->
   	<view class="results-container">
 		<!-- 商铺搜索结果 -->
-		<view class="section" wx:if="{{storeResults.length > 0}}">
-			<view class="section-title">商铺</view>
+		<view class="section results-section" wx:if="{{storeResults.length > 0}}">
+			<view class="category-tag">店 铺</view>
 			<view 
-				class="result-item" 
+				class="result-card" 
 				wx:for="{{storeResults}}" 
 				wx:key="id" 
 				bindtap="openStore" 
@@ -43,10 +43,10 @@
 			</view>
 		</view>
 		<!-- 活动搜索结果 -->
-		<view class="section" wx:if="{{eventResults.length > 0}}">
-			<view class="section-title">活动</view>
+		<view class="section results-section" wx:if="{{eventResults.length > 0}}">
+			<view class="category-tag">活 动</view>
 			<view 
-				class="result-item" 
+				class="result-card" 
 				wx:for="{{eventResults}}" 
 				wx:key="id" 
 				bindtap="openEvent" 
