@@ -74,6 +74,12 @@ class StoreareaContext:
         Storearea.objects.filter(id=storearea_id).delete()
 
     @staticmethod
+    def delete_many(storearea_ids):
+        """批量删除店铺区域"""
+        if storearea_ids:
+            Storearea.objects.filter(id__in=storearea_ids).delete()
+
+    @staticmethod
     def get_events_by_storearea(storearea_id):
         """获取店铺关联的所有活动ID"""
         event_relations = EventStorearea.objects.filter(storearea_id=storearea_id)
@@ -188,6 +194,12 @@ class EventareaContext:
         """删除活动区域"""
         Eventarea.objects.filter(id=eventarea_id).delete()
 
+    @staticmethod
+    def delete_many(eventarea_ids):
+        """批量删除活动区域"""
+        if eventarea_ids:
+            Eventarea.objects.filter(id__in=eventarea_ids).delete()
+
 
 class OtherareaContext:
     """
@@ -249,6 +261,12 @@ class OtherareaContext:
         """删除其他区域"""
         Otherarea.objects.filter(id=otherarea_id).delete()
 
+    @staticmethod
+    def delete_many(otherarea_ids):
+        """批量删除其他区域"""
+        if otherarea_ids:
+            Otherarea.objects.filter(id__in=otherarea_ids).delete()
+
 
 class FacilityContext:
     """
@@ -296,3 +314,9 @@ class FacilityContext:
     @staticmethod
     def delete(facility_id):
         Facility.objects.filter(id=facility_id).delete()
+
+    @staticmethod
+    def delete_many(facility_ids):
+        """批量删除设施"""
+        if facility_ids:
+            Facility.objects.filter(id__in=facility_ids).delete()

@@ -40,6 +40,11 @@ class MapContext(BaseContext):
             detail=geometry
         )
 
+    def delete_map(self, map_id):
+        """删除地图"""
+        # 使用 BaseContext 的 delete 方法需传入实例，或者直接在这里过滤删除
+        self.model.objects.filter(pk=map_id).delete()
+
 class ElementContext:
     """负责处理具体的商铺、设施等元素"""
 

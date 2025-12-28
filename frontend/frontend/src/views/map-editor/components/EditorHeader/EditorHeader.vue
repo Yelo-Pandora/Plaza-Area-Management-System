@@ -2,9 +2,16 @@
   <div class="header">
     <h1 class="title">地图编辑器</h1>
     <div class="actions">
-      <!-- 1. 新增：新建地图按钮 -->
       <button class="btn-create-map" @click="showCreateMap = true">
         📄 新建地图
+      </button>
+      <button
+        class="btn-delete-map"
+        @click="handleDeleteMap"
+        :disabled="!currentMapId"
+        v-if="currentMapId"
+      >
+        🗑️ 删除当前地图
       </button>
 
       <div class="map-selector">
@@ -30,7 +37,7 @@ import { useHeaderLogic } from './EditorHeader.js'
 import CreateMapModal from '../CreateMapModal/CreateMapModal.vue'
 
 // 解构出 showCreateMap
-const { maps, currentMapId, handleChange, showCreateMap } = useHeaderLogic()
+const { maps, currentMapId, handleChange, showCreateMap, handleDeleteMap } = useHeaderLogic()
 </script>
 
 <style scoped src="./EditorHeader.css"></style>

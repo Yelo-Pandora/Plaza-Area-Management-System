@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { listMaps, getMapById } from '@/api/map'
 import * as managementAPI from '@/api/management'
 
@@ -123,6 +123,32 @@ export function useMapEditorStore() {
     else if (type === 'otherarea') otherareas.value.push(feature)
   }
 
+  const resetMapState = (deletedMapId) => {
+    // 从本地列表中移除
+    const index = maps.value.findIndex(m => m.id === deletedMapId)
+    if (index !== -1) {
+      maps.value.splice(index, 1)
+    }
+
+    // 如果删除的是当前选中的地图，重置选中状态
+    if (currentMapId.value === deletedMapId) {
+      currentMap.value = null
+      currentMapId.value = ''
+      storeareas.value = []
+      eventareas.value = []
+      otherareas.value = []
+      facilities.value = []
+      selectedFeature.value = null
+
+      // 尝试选中剩余的第一张地图
+      if (maps.value.length > 0) {
+        currentMapId.value = maps.value[0].id
+        // 这里不需要 await，让它异步加载即可
+        loadCurrentMap()
+      }
+    }
+  }
+
   return {
     maps,
     currentMapId,
@@ -138,6 +164,7 @@ export function useMapEditorStore() {
     loadCurrentMap,
     selectFeature,
     updateLocalFeature,
-    addLocalFeature
+    addLocalFeature,
+    resetMapState
   }
 }

@@ -379,3 +379,45 @@ class MapEditorService:
             import traceback
             traceback.print_exc()
             raise ValueError(f"DXF 解析内部错误: {str(e)}")
+
+    @staticmethod
+    def delete_map(map_id):
+        """
+        删除地图及其所有关联的实体（商铺、设施等）
+        严格遵守 Service -> Context -> Model 分层，不直接访问 Model
+        """
+        map_ctx = MapContext()
+
+        # 1. 检查地图是否存在
+        map_obj = map_ctx.get_by_id(map_id)
+        if not map_obj:
+            raise ValueError("地图不存在")
+
+        try:
+            with transaction.atomic():
+                # 2. 获取关联的元素 ID (通过 Context)
+                # get_map_elements 返回 (store_ids, facility_ids, other_ids, event_ids)
+                s_ids, f_ids, o_ids, e_ids = map_ctx.get_map_elements(map_obj)
+
+                # 3. 通过各领域的 Context 批量删除实体
+                # 注意：StoreareaMap 等中间表会因级联删除自动清理，
+                # 但 Storearea 实体本身需要显式删除。
+
+                if s_ids:
+                    StoreareaContext.delete_many(s_ids)
+
+                if f_ids:
+                    FacilityContext.delete_many(f_ids)
+
+                if o_ids:
+                    OtherareaContext.delete_many(o_ids)
+
+                if e_ids:
+                    EventareaContext.delete_many(e_ids)
+
+                # 4. 通过 Context 删除地图本身
+                map_ctx.delete_map(map_id)
+
+        except Exception as e:
+            # 记录日志等
+            raise ValueError(f"删除地图失败: {str(e)}")

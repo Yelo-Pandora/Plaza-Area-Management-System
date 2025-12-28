@@ -473,8 +473,9 @@ class FacilityViewSet(viewsets.ModelViewSet):
 
 class MapEditorViewSet(viewsets.ViewSet):
     """
-    地图创建与编辑视图
+    地图创建、销毁与编辑视图
     POST /api/editor/map/
+    DELETE /api/editor/map/{id}/
     """
     # 既然前端改用 JSON，这里只需要 JSONParser
     parser_classes = (JSONParser,)
@@ -518,3 +519,19 @@ class MapEditorViewSet(viewsets.ViewSet):
 
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, pk=None):
+        """删除指定地图及其关联数据"""
+        if not pk:
+            return Response({"error": "Map ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            MapEditorService.delete_map(pk)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ValueError as e:
+            # 捕获 Service 层抛出的业务错误
+            if "不存在" in str(e):
+                return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": f"服务器内部错误: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

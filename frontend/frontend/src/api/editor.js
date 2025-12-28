@@ -158,7 +158,6 @@ export function updateEditorFacilityLocation(id, locationGeojson) {
   return request(`api/editor/facility/${id}/`, {
     method: 'PATCH',
     body: {
-      // 后端 Facility 模型使用的是 location 字段
       location: typeof locationGeojson === 'string' ? locationGeojson : JSON.stringify(locationGeojson)
     }
   })
@@ -172,6 +171,10 @@ export function createMapInEditor(data) {
   return request('api/editor/map/', {
     method: 'POST',
     body: data
-    // 删除了 headers: {}，现在默认使用 application/json
   })
+}
+
+// 删除地图
+export function deleteMapInEditor(id) {
+  return request(`api/editor/map/${id}/`, { method: 'DELETE' })
 }

@@ -53,3 +53,29 @@
 .btn-create-map:hover {
   background-color: #059669;
 }
+
+.btn-delete-map {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #ef4444; /* 红色 */
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-right: 0.5rem;
+}
+
+.btn-delete-map:hover {
+  background-color: #dc2626;
+}
+
+.btn-delete-map:disabled {
+  background-color: #fca5a5;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
