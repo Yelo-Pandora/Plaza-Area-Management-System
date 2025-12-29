@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/views/login&register/useAuthStore'
 
 // 懒加载页面视图
 const LoginView = () => import('../views/login&register/Login.vue')
@@ -53,19 +54,23 @@ const router = createRouter({
   ]
 })
 
-// 简单路由守卫：未登录只能访问 /login
+// 路由守卫：未登录只能访问 /login
 router.beforeEach((to, from, next) => {
+  const { isAuthenticated } = useAuthStore()
+
+  // 1. 如果去的是登录页，直接放行
   if (to.name === 'Login') {
-    if (isAuthenticated()) {
-      next({ path: '/' })
+    if (isAuthenticated.value) {
+      next('/')
     } else {
       next()
     }
     return
   }
 
-  if (!isAuthenticated()) {
-    next({ name: 'Login', query: { redirect: to.fullPath } })
+  // 2. 访问其他页面，未登录则强制去登录页
+  if (!isAuthenticated.value) {
+    next({ name: 'Login' })
   } else {
     next()
   }

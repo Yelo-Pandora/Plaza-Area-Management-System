@@ -81,7 +81,7 @@
 							<!-- 店铺图片：设置 mode="aspectFill" 确保正方形裁剪填充 -->
 							<image 
 								class="store-main-image" 
-								src="{{modalDetail.image_url || '/images/default-store.png'}}" 
+								src="{{modalDetail.logo_url || '/images/default-store.png'}}"
 								mode="aspectFill"
 							/>
 							<view class="store-header-text">

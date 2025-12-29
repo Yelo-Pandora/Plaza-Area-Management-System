@@ -1,27 +1,27 @@
 const util = require('../../utils/util')
 
 const FACILITY_TYPE_MAP = {
-  1: '电动扶梯',
-  2: '灭火器',
-  3: '安全出口',
-  4: '服务台',
-  5: '其他',
+  0: '电动扶梯',
+  1: '灭火器',
+  2: '安全出口',
+  3: '服务台',
+  4: '其他',
 }
 
 const FACILITY_ICON_MAP = {
-  1: '/images/facility/escalator.png',
-  2: '/images/facility/fire_extinguisher.png',
-  3: '/images/facility/exit.png',
-  4: '/images/facility/info.png',
-  5: '/images/facility/other.png',
+  0: '/images/facility/escalator.png',
+  1: '/images/facility/fire_extinguisher.png',
+  2: '/images/facility/exit.png',
+  3: '/images/facility/info.png',
+  4: '/images/facility/other.png',
 }
 
 const FACILITY_ICON_BASE_COLOR = {
-  1: 'rgba(24,144,255,0.95)',   // 蓝
-  2: 'rgba(220,38,38,0.95)',    // 红
-  3: 'rgba(34,197,94,0.95)',    // 绿
-  4: 'rgba(245,158,11,0.95)',   // 黄
-  5: 'rgba(255,120,40,0.95)',   // 橙
+  0: 'rgba(24,144,255,0.95)',   // 蓝
+  1: 'rgba(220,38,38,0.95)',    // 红
+  2: 'rgba(34,197,94,0.95)',    // 绿
+  3: 'rgba(245,158,11,0.95)',   // 黄
+  4: 'rgba(255,120,40,0.95)',   // 橙
 }
 
 const EVENT_AREA_TYPE_MAP = {
