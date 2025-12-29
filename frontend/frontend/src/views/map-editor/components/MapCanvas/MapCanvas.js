@@ -83,7 +83,6 @@ export function useCanvasLogic(stageContainerRef) {
   loadIcons()
 
   // --- 设施类型样式映射 ---
-  // 保留背景颜色，移除 label 和 emoji，改用 iconKey
   const facilityStyles = {
     0: { color: '#3b82f6' }, // 电梯 - 蓝
     1: { color: '#ec4899' }, // 卫生间 - 粉
@@ -352,10 +351,6 @@ export function useCanvasLogic(stageContainerRef) {
         listening: false
       })
       group.add(icon)
-    } else {
-      // 图片还没加载出来，或者加载失败，可以画个简单的占位符或保持空白
-      // 这里如果 loadIcons 是异步的，可能第一次绘制时没有图片，
-      // 但 loadIcons 完成后的 batchDraw 会补上
     }
 
     // 事件绑定

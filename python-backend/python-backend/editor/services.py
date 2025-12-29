@@ -77,25 +77,21 @@ class EventService:
     @staticmethod
     def add_storearea_to_event(event_id, storearea_id):
         """添加活动与店铺区域的关联关系"""
-        # 可以在这里添加业务逻辑验证（如检查活动和店铺是否存在等）
         return EventContext.add_storearea_relation(event_id, storearea_id)
 
     @staticmethod
     def remove_storearea_from_event(event_id, storearea_id):
         """移除活动与店铺区域的关联关系"""
-        # 可以在这里添加业务逻辑验证
         return EventContext.remove_storearea_relation(event_id, storearea_id)
 
     @staticmethod
     def add_eventarea_to_event(event_id, eventarea_id):
         """添加活动与活动区域的关联关系"""
-        # 可以在这里添加业务逻辑验证（如检查活动和活动区域是否存在等）
         return EventContext.add_eventarea_relation(event_id, eventarea_id)
 
     @staticmethod
     def remove_eventarea_from_event(event_id, eventarea_id):
         """移除活动与活动区域的关联关系"""
-        # 可以在这里添加业务逻辑验证
         return EventContext.remove_eventarea_relation(event_id, eventarea_id)
 
 
@@ -124,13 +120,11 @@ class EventareaService:
     @staticmethod
     def update_eventarea_shape(eventarea_id, shape):
         """更新活动区域的形状"""
-        # 可以在这里添加业务逻辑验证（如形状有效性检查等）
         return EventareaContext.update_shape(eventarea_id, shape)
 
     @staticmethod
     def delete_eventarea(eventarea_id):
         """删除活动区域"""
-        # 可以在这里添加业务逻辑验证
         return EventareaContext.delete(eventarea_id)
 
 
@@ -159,13 +153,11 @@ class OtherareaService:
     @staticmethod
     def update_otherarea_shape(otherarea_id, shape):
         """更新其他区域的形状"""
-        # 可以在这里添加业务逻辑验证（如形状有效性检查等）
         return OtherareaContext.update_shape(otherarea_id, shape)
 
     @staticmethod
     def delete_otherarea(otherarea_id):
         """删除其他区域"""
-        # 可以在这里添加业务逻辑验证
         return OtherareaContext.delete(otherarea_id)
 
 class FacilityService:
@@ -245,7 +237,6 @@ class MapEditorService:
                 new_map = map_ctx.create_map_record(building_id, floor_number, map_geometry)
 
                 # 4. 创建关联实体 (调用 editor.context 中的各 Context)
-                # 注意：editor.context.create 方法通常只接收 shape/location 和 map_id
 
                 # A. 创建店铺
                 for shape in dxf_data['storearea']:
@@ -278,13 +269,11 @@ class MapEditorService:
         解析 DXF 文件，按图层分类提取几何数据
         """
         try:
-            # === 修复逻辑开始 ===
             # 1. 统一转换为二进制流 (Binary Stream)
             binary_stream = None
             if isinstance(uploaded_file, bytes):
                 binary_stream = io.BytesIO(uploaded_file)
             elif hasattr(uploaded_file, 'read'):
-                # 已经是流对象 (BytesIO 或 Django UploadedFile)
                 binary_stream = uploaded_file
             else:
                 raise ValueError("不支持的文件输入类型")
@@ -294,7 +283,6 @@ class MapEditorService:
                 binary_stream.seek(0)
 
             # 3. 将二进制流包装为文本流 (Text Stream)
-            # ezdxf.read() 需要读取字符串。DXF 通常是 cp1252 或 utf-8。
             # 使用 errors='ignore' 防止因为编码问题导致解析完全失败
             text_stream = io.TextIOWrapper(binary_stream, encoding='utf-8', errors='ignore')
 

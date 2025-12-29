@@ -477,14 +477,13 @@ class MapEditorViewSet(viewsets.ViewSet):
     POST /api/editor/map/
     DELETE /api/editor/map/{id}/
     """
-    # 既然前端改用 JSON，这里只需要 JSONParser
     parser_classes = (JSONParser,)
 
     def create(self, request):
         building_id = request.data.get('building_id')
         floor_number = request.data.get('floor_number')
 
-        # 获取 Base64 字符串 (格式通常为 "data:application/dxf;base64,......")
+        # 获取 Base64 字符串
         file_data_url = request.data.get('file_data')
 
         if not building_id or not floor_number:
@@ -493,7 +492,7 @@ class MapEditorViewSet(viewsets.ViewSet):
         dxf_file_stream = None
         if file_data_url:
             try:
-                # 1. 分离头部 (如果有) 和 内容
+                # 1. 分离头部(如果有)和内容
                 if ',' in file_data_url:
                     header, data_str = file_data_url.split(',', 1)
                 else:
@@ -502,16 +501,14 @@ class MapEditorViewSet(viewsets.ViewSet):
                 # 2. Base64 解码
                 file_bytes = base64.b64decode(data_str)
 
-                # 3. 转为二进制流 (BytesIO 实现了 read() 方法，ezdxf 可直接读取)
+                # 3. 转为二进制流
                 dxf_file_stream = io.BytesIO(file_bytes)
-                # 为了让 ezdxf 读取文本模式更安全，有时需要 TextIOWrapper，
-                # 但 ezdxf.read() 通常也能处理 bytes。我们先传 bytes stream。
 
             except Exception as e:
                 return Response({"error": f"文件解析失败: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 调用 Service (Service 逻辑无需修改，它只关心传入的对象有 read() 方法)
+            # 调用 Service
             new_map = MapEditorService.create_map(building_id, floor_number, dxf_file_stream)
 
             Serializer = get_map_serializer()

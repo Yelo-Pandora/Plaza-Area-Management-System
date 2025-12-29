@@ -63,7 +63,7 @@
 }
 
 .layer-toggle.expanded {
-  transform: rotate(0deg); /* 根据具体字符调整，此处仅占位 */
+  transform: rotate(0deg);
 }
 
 .layer-items {

@@ -10,8 +10,6 @@ def get_storearea_serializer():
         class Meta:
             model = Storearea
             fields = '__all__'
-            # 由于使用了 managed=False，需要明确指定字段
-            # 但 ModelSerializer 会自动从模型获取字段
 
     return StoreareaSerializer
 

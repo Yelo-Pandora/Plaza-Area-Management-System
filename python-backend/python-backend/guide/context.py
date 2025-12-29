@@ -6,7 +6,7 @@ from core.models import Map, Storearea, Eventarea, Otherarea, Facility, Storeare
     FacilityMap
 
 
-class GuideContext:  # 不继承 BaseContext
+class GuideContext:
     """
     导航模块数据上下文
     职责：只负责从数据库提取几何数据，不负责路径计算逻辑

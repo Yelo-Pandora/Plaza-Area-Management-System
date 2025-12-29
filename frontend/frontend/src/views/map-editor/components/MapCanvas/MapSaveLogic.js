@@ -54,7 +54,6 @@ export function useMapSaveLogic() {
   }
 
   // --- 判断是否为新元素 ---
-  // 依据：ID 是时间戳 (13位) 肯定比数据库自增 ID (通常 < 10位) 大
   const isNewItem = (id) => {
     return String(id).length > 10
   }
@@ -118,9 +117,6 @@ export function useMapSaveLogic() {
       for (const item of allItems) {
         const wkt = toWKT(item)
         if (wkt) {
-          // 如果是新元素，校验时给个假ID (避免 ID='1703...' 导致后端转换int报错或逻辑混乱)
-          // 或者直接传临时ID，只要后端 validate_batch 的 updated_keys 逻辑能处理字符串即可(我们在上一步已经修复了后端支持str id)
-          // 为了保险，新元素我们不做“排除旧位置”的校验（因为它没有旧位置），这在后端 validate_batch 逻辑天然支持
 
           if (isNewItem(item.id)) hasNewItems = true;
 

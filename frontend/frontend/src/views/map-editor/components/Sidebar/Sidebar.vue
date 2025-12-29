@@ -8,7 +8,7 @@
     </div>
 
     <div class="layer-groups">
-      <!-- 1. 店铺区域 (保持不变) -->
+      <!-- 1. 店铺区域 -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('storearea')">
           <span class="layer-icon">🏪</span>
@@ -30,7 +30,7 @@
         </div>
       </div>
 
-      <!-- 2. 活动区域 (修改显示逻辑) -->
+      <!-- 2. 活动区域 -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('eventarea')">
           <span class="layer-icon">🎪</span>
@@ -53,7 +53,7 @@
         </div>
       </div>
 
-      <!-- 3. 其他区域 (修改显示逻辑) -->
+      <!-- 3. 其他区域 -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('otherarea')">
           <span class="layer-icon">🏢</span>
@@ -70,13 +70,12 @@
             :class="['layer-item', { selected: isSelected('otherarea', area.id) }]"
             @click="handleSelect('otherarea', area)"
           >
-            <!-- 使用 getOtherAreaDisplay -->
             <span class="layer-item-name">{{ getOtherAreaDisplay(area) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- 4. 设施 (保持不变) -->
+      <!-- 4. 设施 -->
       <div class="layer-group">
         <div class="layer-group-header" @click="toggleLayer('facility')">
           <span class="layer-icon">🚻</span>
@@ -106,7 +105,6 @@ import { useSidebarLogic } from './Sidebar.js'
 const {
   storeareas, eventareas, otherareas, facilities,
   expandedLayers, toggleLayer, handleSelect, isSelected,
-  // 引入新函数
   getEventAreaDisplay,
   getOtherAreaDisplay
 } = useSidebarLogic()

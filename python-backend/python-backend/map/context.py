@@ -17,7 +17,6 @@ class MapContext(BaseContext):
     @staticmethod
     def get_map_elements(map_obj):
         """一次性获取地图关联的所有元素 ID"""
-        # 注意：这里只负责取数据，不负责格式化
         store_ids = map_obj.storeareamap_set.values_list('storearea_id', flat=True)
         facility_ids = map_obj.facilitymap_set.values_list('facility_id', flat=True)
         other_ids = map_obj.otherareamap_set.values_list('otherarea_id', flat=True)
@@ -42,7 +41,6 @@ class MapContext(BaseContext):
 
     def delete_map(self, map_id):
         """删除地图"""
-        # 使用 BaseContext 的 delete 方法需传入实例，或者直接在这里过滤删除
         self.model.objects.filter(pk=map_id).delete()
 
 class ElementContext:

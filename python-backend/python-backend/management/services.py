@@ -104,7 +104,6 @@ class EventareaService:
                 raise ValueError(f"Field '{field}' is required")
 
         # 2. 验证电话号码格式
-        # 这里可以添加更复杂的电话号码验证逻辑
         if len(data['organizer_phone']) < 10:
             raise ValueError("Phone number must be at least 10 characters long")
 
@@ -303,7 +302,6 @@ class OtherareaService:
                     elif value.lower() == 'false':
                         data[field] = False
 
-        # 如果有其他业务逻辑验证，可以在这里添加
 
         return OtherareaContext.update_otherarea(otherarea_id, data)
 
@@ -319,7 +317,6 @@ class OtherareaService:
         # 1. 验证其他区域是否存在
         otherarea = OtherareaContext.get_otherarea_by_id(otherarea_id)
 
-        # 2. 可以添加其他验证逻辑
 
         return OtherareaContext.delete_otherarea(otherarea_id)
 
@@ -395,9 +392,6 @@ class EventService:
         if 'shape' in data:
             del data['shape']
 
-        # 业务逻辑验证
-        # 这里可以添加更多的业务逻辑验证
-
         return EventContext.create_event(data)
 
     @staticmethod
@@ -415,9 +409,6 @@ class EventService:
         # 移除可能存在的shape属性
         if 'shape' in data:
             del data['shape']
-
-        # 业务逻辑验证
-        # 这里可以添加更多的业务逻辑验证
 
         return EventContext.update_event(event_id, data)
 
@@ -489,9 +480,6 @@ class StoreareaService:
                     elif value.lower() == 'false':
                         data[field] = False
 
-        # 业务逻辑验证
-        # 这里可以添加更多的业务逻辑验证
-
         return StoreareaContext.create_storearea(data)
 
     @staticmethod
@@ -520,9 +508,6 @@ class StoreareaService:
                         data[field] = True
                     elif value.lower() == 'false':
                         data[field] = False
-
-        # 业务逻辑验证
-        # 这里可以添加更多的业务逻辑验证
 
         return StoreareaContext.update_storearea(storearea_id, data)
 
@@ -658,8 +643,6 @@ class FacilityService:
                     elif value.lower() == 'false':
                         data[field] = False
 
-        # 如果有其他业务逻辑验证，可以在这里添加
-
         return FacilityContext.update_facility(facility_id, data)
 
     @staticmethod
@@ -675,8 +658,6 @@ class FacilityService:
         # 业务逻辑验证
         # 1. 验证设施是否存在
         facility = FacilityContext.get_facility_by_id(facility_id)
-
-        # 2. 可以添加其他验证逻辑
 
         return FacilityContext.delete_facility(facility_id)
 

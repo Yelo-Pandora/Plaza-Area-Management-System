@@ -19,7 +19,6 @@
           <input type="text" :value="selectedFeature.id" class="form-input" disabled>
         </div>
 
-        <!-- ... (中间的表单项保持不变) ... -->
         <div class="form-group" v-if="selectedType === 'storearea'">
           <label class="form-label">名称</label>
           <input
@@ -33,7 +32,6 @@
         <div class="form-group">
           <label class="form-label">类型</label>
           <select v-model="form.type" class="form-select">
-             <!-- ... options 保持不变 ... -->
              <template v-if="selectedType === 'storearea'">
               <option value="0">普通店铺</option>
               <option value="1">餐饮</option>
@@ -89,9 +87,7 @@
           </div>
         </div>
 
-        <!-- 修改这里：操作按钮区域 -->
         <div class="form-actions space-between">
-          <!-- 左侧放删除按钮 -->
           <button
             type="button"
             class="btn btn-danger"
@@ -101,7 +97,6 @@
             删除
           </button>
 
-          <!-- 右侧放保存按钮 -->
           <button
             type="submit"
             class="btn btn-primary"
@@ -118,7 +113,6 @@
 
 <script setup>
 import { usePropertiesLogic } from './PropertyPanel.js'
-// 确保解构出了 handleDelete 和 isDeleting
 const { form, selectedFeature, selectedType, save, handleDelete, submitting, isDeleting, errorMessage, getTypeName } = usePropertiesLogic()
 </script>
 

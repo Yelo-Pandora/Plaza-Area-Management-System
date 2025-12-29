@@ -26,8 +26,6 @@ export function useSidebarLogic() {
     return selectedType.value === type && selectedFeature.value?.id === id
   }
 
-  // --- 新增：文本格式化辅助函数 ---
-
   // 字符串截断函数：超过 len 个字就加省略号
   const truncate = (str, len = 6) => {
     if (!str) return ''
