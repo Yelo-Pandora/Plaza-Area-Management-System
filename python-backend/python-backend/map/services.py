@@ -5,9 +5,10 @@ import json
 from django.contrib.gis.geos import GEOSGeometry
 
 
-# ==========================================
-# Part 1: 纯几何算法 (保持不变)
-# ==========================================
+"""
+Part 1: 纯几何算法
+"""
+
 class GeometryAlgorithms:
     @staticmethod
     def validate_shape_syntax(geometry: GEOSGeometry) -> Tuple[bool, str]:
@@ -58,9 +59,9 @@ class GeometryAlgorithms:
         return True, "Placement valid"
 
 
-# ==========================================
-# Part 2: 业务服务 (修改部分)
-# ==========================================
+"""
+Part 2: 业务服务 (修改部分)
+"""
 
 class MapDisplayService:
     """
@@ -102,7 +103,7 @@ class MapDisplayService:
         outer_shell = map_obj.detail[0]
         holes = list(map_obj.detail[1:]) if len(map_obj.detail) > 1 else []
 
-        # 3. 获取所有障碍物 (修改点：在 Service 层组装数据)
+        # 3. 获取所有障碍物
         obstacles = self._collect_obstacles(map_obj, exclude_id, area_type)
 
         # 4. 调用算法进行物理放置校验
@@ -124,7 +125,7 @@ class MapDisplayService:
 
         # 辅助函数：处理排除逻辑
         def should_include(item_id, item_type):
-            # 如果类型相同且 ID 相同，则排除（说明是正在编辑的那个对象）
+            # 如果类型相同且 ID 相同，则排除
             if area_type == item_type and str(item_id) == str(exclude_id):
                 return False
             return True
@@ -167,7 +168,6 @@ class MapDisplayService:
         maps = self.map_ctx.list_all_with_building()
 
         # 2. 初始化空属性，防止 MapSerializer 报错
-        # (因为列表页通常不需要加载 heavy 的商铺/设施数据，只看底图或基础信息)
         for map_obj in maps:
             map_obj.temp_stores = []
             map_obj.temp_facilities = []

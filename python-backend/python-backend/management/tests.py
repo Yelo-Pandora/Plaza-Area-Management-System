@@ -28,10 +28,6 @@ class AdminAuthAPITestCase(APITestCase):
             password=make_password(self.password),  # 注意: 这里是明文，在测试中我们会手动进行哈希检查
             name="Original Name"
         )
-        # # 注意: 真实的 AdminService.register_admin 会自动哈希密码，但这里我们绕过 Service 直接创建，
-        # # 所以必须手动设置哈希后的密码才能通过 login 测试。
-        # self.admin.password = check_password(self.password, 'fake_hash')  # 任意哈希值
-        # self.admin.save()
 
     # ------------------ 注册 (Register) 测试 ------------------
 

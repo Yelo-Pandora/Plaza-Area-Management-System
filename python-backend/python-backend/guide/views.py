@@ -25,14 +25,12 @@ class RoutePlanView(APIView):
         end_data = request.data.get('end')
 
         # 这一步负责检查参数是否存在、格式是否正确、坐标是否可转换为浮点数
-        # 我们不需要在这里写 if-else，全交给 Service
         is_valid, error_msg = service.validate_request_params(map_id, start_data, end_data)
 
         if not is_valid:
             return Response({"error": error_msg}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            # 经过上面的校验，这里可以放心转换，不用担心 KeyError 或 TypeError
             start_point = Point(float(start_data['x']), float(start_data['y']), srid=2385)
             end_point = Point(float(end_data['x']), float(end_data['y']), srid=2385)
 

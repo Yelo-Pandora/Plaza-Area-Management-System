@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { listMaps, getMapById } from '@/api/map'
 import * as managementAPI from '@/api/management'
 
-// 定义全局响应式状态（单例模式，类似简易 Pinia）
+// 定义全局响应式状态（单例模式）
 const maps = ref([])
 const currentMapId = ref('')
 const currentMap = ref(null)
@@ -143,7 +143,6 @@ export function useMapEditorStore() {
       // 尝试选中剩余的第一张地图
       if (maps.value.length > 0) {
         currentMapId.value = maps.value[0].id
-        // 这里不需要 await，让它异步加载即可
         loadCurrentMap()
       }
     }

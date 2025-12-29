@@ -51,12 +51,12 @@ export function usePropertiesLogic() {
     }
   })
 
-  // --- 新增：判断是否为新建元素 ---
+  // --- 判断是否为新建元素 ---
   const isNewItem = (id) => {
     return String(id).length > 10 // 简单判断：时间戳ID通常很长
   }
 
-  // --- 新增：删除逻辑 ---
+  // --- 删除逻辑 ---
   const handleDelete = async () => {
     if (!selectedFeature.value || !confirm(`确定要删除这个${getTypeName()}吗？此操作不可恢复。`)) return
 
@@ -151,9 +151,9 @@ export function usePropertiesLogic() {
     selectedFeature,
     selectedType,
     save,
-    handleDelete, // 导出
+    handleDelete,
     submitting,
-    isDeleting,   // 导出
+    isDeleting,
     errorMessage,
     getTypeName
   }

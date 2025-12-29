@@ -52,13 +52,12 @@ class MapViewSetTestCase(APITestCase):
             is_active = True
         )
 
-        # 4. 关联商铺到地图 (重要：否则 retrieve 接口不会返回该商铺)
+        # 4. 关联商铺到地图
         StoreareaMap.objects.create(
             map=self.map_obj,
             storearea=self.store
         )
 
-        # 路由名称定义 (对应 urls.py 中的 router.register(..., basename='maps'))
         self.list_url = reverse('map-list')
         self.detail_url = reverse('map-detail', args=[self.map_obj.id])
 
@@ -80,8 +79,7 @@ class MapViewSetTestCase(APITestCase):
         self.assertEqual(map_data['floor_number'], 1)
         self.assertEqual(map_data['building_name'], "测试万达广场")
 
-        # 4. 验证列表接口是否正确处理了 temp_stores (应该为空列表或不报错)
-        # 根据我们之前的 Service 逻辑，列表接口为了性能可能没有加载 stores，或者加载了空列表
+        # 4. 验证列表接口是否正确处理了 temp_stores
         if 'stores' in map_data:
             self.assertIsInstance(map_data['stores'], list)
 

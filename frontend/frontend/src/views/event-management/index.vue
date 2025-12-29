@@ -240,27 +240,6 @@
                 placeholder="请输入活动描述（可选）"
               ></textarea>
             </div>
-
-<!--            <div class="form-group">-->
-<!--              <label class="form-label">主办方</label>-->
-<!--              <input-->
-<!--                v-model="formData.organizer"-->
-<!--                type="text"-->
-<!--                class="form-input"-->
-<!--                placeholder="请输入主办方名称（可选）"-->
-<!--              >-->
-<!--            </div>-->
-
-<!--            <div class="form-group">-->
-<!--              <label class="form-label">活动地址</label>-->
-<!--              <input-->
-<!--                v-model="formData.location"-->
-<!--                type="text"-->
-<!--                class="form-input"-->
-<!--                placeholder="请输入活动地址（可选）"-->
-<!--              >-->
-<!--            </div>-->
-
             <div class="form-group">
               <label class="form-label">状态</label>
               <div class="toggle-switch">
@@ -619,13 +598,6 @@ const getEventStatusText = (event) => {
   return statusMap[status] || '未知'
 }
 
-// const parseBackendDateTime = (dateString) => {
-//   if (!dateString) return null
-//   // 处理后端的带微秒格式：2025-12-23 04:27:42.443939
-//   // 将空格替换为T，确保浏览器能正确解析
-//   const isoString = dateString.replace(' ', 'T')
-//   return new Date(isoString)
-// }
 const parseBackendDateTime = (dateString) => {
   if (!dateString) return null
 
@@ -663,11 +635,6 @@ const dateTimeLocalToBackend = (localValue) => {
   // "2025-12-23T04:27" → "2025-12-23 04:27:00"
   return localValue.replace('T', ' ') + ':00'
 };
-// const formatDate = (dateString) => {
-//   if (!dateString) return '-'
-//   const date = parseBackendDateTime(dateString)
-//   return date ? date.toLocaleDateString('zh-CN') : '-'
-// }
 
 
 
@@ -891,7 +858,6 @@ const searchEventareas = async () => {
   }
 
   try {
-    // 这里需要搜索活动区域的API，如果没有，可以使用management的列表
     const response = await managementAPI.listManagementEventareas()
     const allEventareas = response.data || response
     eventareaResults.value = allEventareas.filter(area =>
@@ -941,8 +907,6 @@ const removeStoreareaFromEvent = async (storeareaId) => {
 
 const addEventareaToEvent = async (eventareaId) => {
   try {
-    // 注意：根据editor.js，添加活动区域使用的是addEventareaToEvent函数
-    // 但参数可能需要调整，根据实际API
     await editorAPI.addEventareaToEvent(currentEvent.value.id, eventareaId)
 
     // 重新加载关联区域
@@ -959,7 +923,6 @@ const addEventareaToEvent = async (eventareaId) => {
 
 const removeEventareaFromEvent = async (eventareaId) => {
   try {
-    // 注意：根据editor.js，移除活动区域使用的是removeEventareaFromEvent函数
     await editorAPI.removeEventareaFromEvent(currentEvent.value.id, eventareaId)
 
     // 重新加载关联区域

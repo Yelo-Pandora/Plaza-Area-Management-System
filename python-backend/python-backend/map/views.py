@@ -22,8 +22,6 @@ class MapViewSet(viewsets.ViewSet):
         maps = service.get_map_list()
 
         # 2. 序列化返回
-        # 注意：这里会返回所有地图的 GeoJSON，数据量可能较大
-        # 实际生产中建议单独定义一个 SimpleMapSerializer (不含 detail_geojson) 用于列表
         serializer = MapSerializer(maps, many=True)
 
         return Response(serializer.data)
@@ -39,7 +37,6 @@ class MapViewSet(viewsets.ViewSet):
             return Response({"error": "Map not found"}, status=status.HTTP_404_NOT_FOUND)
 
         # 2. 使用 Serializer 格式化 Service 返回的数据
-        # 注意：Serializer 内部字段 source='temp_stores' 需要对应 Service 挂载的属性
         serializer = MapSerializer(map_data)
         return Response(serializer.data)
 
@@ -84,7 +81,7 @@ class MapBatchValidationView(APIView):
         if not map_id:
             return Response({"error": "map_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # --- 数据预处理：在 View 层统一解析几何并修正 SRID ---
+        # 数据预处理：在 View 层统一解析几何并修正 SRID
         processed_updates = []
         for i, item in enumerate(updates):
             try:
@@ -103,7 +100,6 @@ class MapBatchValidationView(APIView):
                     shape.srid = 2385
 
                 # 5. 将处理好的 GEOSGeometry 对象注入 item
-                # 使用一个新的 key 'geos_obj' 传递给 Service
                 item['geos_obj'] = shape
                 processed_updates.append(item)
 

@@ -336,7 +336,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listMaps } from '../../api/map'
 import * as managementAPI from '../../api/management'
-import * as searchAPI from '../../api/search'
 
 const router = useRouter()
 
@@ -497,7 +496,6 @@ const loadOtherareas = async () => {
     return otherareas.map(item => ({
       ...item,
       type: 'otherarea'
-      // 其他区域直接使用type字段，不需要额外映射
     }))
   } catch (error) {
     console.error('加载其他区域失败:', error)
@@ -718,7 +716,7 @@ const handleSubmit = async () => {
       submitData.event_name = submitData.name
       delete submitData.name
       submitData.event_type = parseInt(submitData.event_type)
-      
+
       // 转换时间格式
       if (submitData.start_time) {
         submitData.start_time = formatForBackend(submitData.start_time)
@@ -743,15 +741,15 @@ const handleSubmit = async () => {
           storearea: managementAPI.updateManagementStoreareaFloor,
           otherarea: managementAPI.updateManagementOtherareaFloor
         }[formData.value.type]
-        
+
         if (updateFloorApi) {
           await updateFloorApi(formData.value.id, parseInt(formData.value.map_id))
         }
       }
-      
+
       // 移除map_id，因为它已经通过专门的API更新了
       delete submitData.map_id
-      
+
       // 更新其他属性 - 使用PUT方法（完整更新）而不是默认的PATCH方法
       await managementAPI.updateAreaByTypeAndId(formData.value.type, formData.value.id, submitData, false)
     } else {
