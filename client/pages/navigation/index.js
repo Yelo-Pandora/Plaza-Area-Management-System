@@ -24,6 +24,28 @@ const FACILITY_ICON_BASE_COLOR = {
   5: 'rgba(255,120,40,0.95)',   // 橙
 }
 
+const EVENT_AREA_TYPE_MAP = {
+  0: '其他活动',
+  1: '促销活动',
+  2: '展览活动',
+  3: '表演活动',
+}
+
+const OTHER_AREA_TYPE_MAP = {
+  0: '公共区域',
+  1: '🚻卫生间',
+  2: '🛗电梯间',
+  3: '其他',
+}
+
+// 区域大类（eventarea/storearea/otherarea...）
+const AREA_TYPE_MAP = {
+  eventarea: '活动区域',
+  storearea: '商铺区域',
+  otherarea: '其他区域',
+  publicarea: '公共区域'
+}
+
 Page({
   data: {
     maps: [],
@@ -167,20 +189,48 @@ Page({
         label: `${m.building_name || ''} ${m.floor_number} 层`, 
         raw: m 
       }))
-      this.setData({ maps })
-      if (maps.length) {
-        let targetIdx = 0;
-        // 检查是否有搜索页传来的待跳转 mapId
-        if (this._pendingMapId) {
-          const idx = maps.findIndex(m => m.id == this._pendingMapId);
-          if (idx !== -1) {
-            targetIdx = idx;
-          }
-          this._pendingMapId = null; // 处理完即销毁
+      let targetIdx = 0;
+      if (this._pendingMapId) {
+        const idx = maps.findIndex(m => m.id == this._pendingMapId);
+        if (idx !== -1) {
+          targetIdx = idx;
         }
-        this.loadMapDetail(targetIdx);
+        this._pendingMapId = null; // 处理完即销毁
       }
+      // 修复核心：在加载详情前，先将正确的索引同步到 data 中
+      // 这样后续 loadMapDetail 触发 drawMap 时，idx 才是正确的
+      this.setData({ 
+        maps,
+        selectedMapIndex: targetIdx 
+      }, () => {
+        // 在 setData 的回调中执行加载详情，确保顺序
+        if (maps.length) {
+          this.loadMapDetail(targetIdx);
+        }
+      });
     }).catch(err => console.error('加载地图列表失败', err))
+  },
+
+  centroidOfRing(ring) {
+    if (!Array.isArray(ring) || ring.length < 3) return null
+    let area = 0
+    let cxSum = 0
+    let cySum = 0
+    for (let i = 0; i < ring.length - 1; i++) {
+      const x0 = ring[i][0], y0 = ring[i][1]
+      const x1 = ring[i + 1][0], y1 = ring[i + 1][1]
+      const a = x0 * y1 - x1 * y0
+      area += a
+      cxSum += (x0 + x1) * a
+      cySum += (y0 + y1) * a
+    }
+    if (Math.abs(area) < 1e-9) {
+      let sx = 0, sy = 0
+      ring.forEach(p => { sx += p[0]; sy += p[1] })
+      return [sx / ring.length, sy / ring.length]
+    }
+    area *= 0.5
+    return [cxSum / (6 * area), cySum / (6 * area)]
   },
 
   onMapChange(e) {
@@ -413,6 +463,22 @@ Page({
         return [cx, cy]
       }
 
+      // === 严格抄自 home/index.js 的辅助函数 ===
+      const showLabels = (this.data.scale || 1) >= 2.4
+      const truncate = (text, maxChars) => {
+        if (!text) return ''
+        const s = String(text); if (s.length <= maxChars) return s
+        return s.slice(0, Math.max(0, maxChars - 1)) + '…'
+      }
+      const drawLabel = (x, y, text, fontSize) => {
+        if (!text) return
+        const t = truncate(text, 10)
+        ctx.setFontSize(fontSize); ctx.setTextAlign('center'); ctx.setTextBaseline('middle')
+        ctx.setStrokeStyle('rgba(255,255,255,0.95)'); ctx.setLineWidth(3)
+        ctx.strokeText(t, x, y)
+        ctx.setFillStyle('#111'); ctx.fillText(t, x, y)
+      }
+
       // 绘制背景/轮廓
       ctx.setStrokeStyle('#333'); ctx.setLineWidth(1); ctx.setFillStyle('#fff')
       polygons.forEach(poly => {
@@ -454,24 +520,28 @@ Page({
         ctx.closePath(); ctx.fill()
       })
 
-      const showLabels = this.data.scale > 2.4
-
-      // 区域名称
+      // === 严格抄自 home/index.js 的区域名称渲染逻辑 ===
       if (showLabels) {
-        ctx.setFontSize(10); ctx.setFillStyle('#000000'); ctx.setTextAlign('center'); ctx.setTextBaseline('middle');
         regions.forEach(r => {
-          const meta = r.meta;
-          if (meta && meta._center) {
-            let name = ''
-            if (r.kind === 'storearea') name = meta.store_name;
-            else if (r.kind === 'eventarea') name = this.data.eventareaTypeMap[meta.type];
-            else if (r.kind === 'otherarea') name = this.data.otherareaTypeMap[meta.type];
-            if (name) {
-              const [tx, ty] = toCanvas(meta._center.x, meta._center.y);
-              ctx.setShadow(0, 0, 2, 'white'); ctx.fillText(name, tx, ty); ctx.setShadow(0, 0, 0, 'transparent');
+          try {
+            const ring = r.coords && r.coords[0]
+            const c = this.centroidOfRing(ring)
+            if (!c) return
+            const [lx, ly] = toCanvas(c[0], c[1])
+
+            const metaWithKind = (r && r.meta && typeof r.meta === 'object')
+              ? Object.assign({}, r.meta, { __kind: r.kind })
+              : r.meta
+            const norm = this._normalizeRegionForModal(metaWithKind)
+            let label = ''
+            if (r.kind === 'storearea') {
+              label = (norm && (norm.store_name || norm.name)) || (r.meta && (r.meta.store_name || r.meta.name || r.meta.title))
+            } else {
+              label = (norm && norm.type_display) || (r.kind === 'eventarea' ? '活动区域' : '其他区域')
             }
-          }
-        });
+            drawLabel(lx, ly, label, 12)
+          } catch (e) {}
+        })
       }
 
       // 绘制设施图片
@@ -573,23 +643,26 @@ Page({
   },
 
   // 核心交互
-  onCanvasTap(e) {
-    const clientX = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX) || e.detail.x
-    const clientY = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY) || e.detail.y
+ onCanvasTap(e) {
+    const clientX = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX) || (e.touches && e.touches[0] && e.touches[0].clientX) || e.detail.x
+    const clientY = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY) || (e.touches && e.touches[0] && e.touches[0].clientY) || e.detail.y
     if (!this._drawn) return
 
     const query = wx.createSelectorQuery().in(this)
     query.select('.map-canvas').boundingClientRect(rect => {
       if (!rect) return
-      const relX = clientX - rect.left, relY = clientY - rect.top
+      const relX = clientX - rect.left
+      const relY = clientY - rect.top
+
       const d = this._drawn
       const sVal = d.baseScale * this.data.scale
-      const padX = (rect.width - d.mapW * sVal)/2
-      const padY = (rect.height - d.mapH * sVal)/2
+      const padX = (rect.width - d.mapW * sVal) / 2
+      const padY = (rect.height - d.mapH * sVal) / 2
 
-      const gx = (relX - this.data.offsetX - padX)/sVal + d.minX
-      const gy = (relY - this.data.offsetY - padY)/sVal + d.minY
-      // 如果处于起终点选择模式
+      const gx = (relX - this.data.offsetX - padX) / sVal + d.minX
+      const gy = (relY - this.data.offsetY - padY) / sVal + d.minY
+
+      // 如果处于起终点选择模式，优先处理导航选点
       if (this.data.selectionMode) {
         if (this._isValidWalkable(gx, gy)) {
           if (this.data.selectionMode === 'start') {
@@ -601,38 +674,118 @@ Page({
         } else {
           wx.showToast({ title: '此处无法通行', icon: 'none' })
         }
-        return // 拦截弹窗逻辑
+        return 
       }
 
-      // 判定 1：设施点判定 12px 距离
+      // 1. 设施点判定 (12px 距离内优先命中)
       let hit = null
       if (d.facilities && d.facilities.length) {
-        for (let i=0; i<d.facilities.length; i++) {
+        for (let i = 0; i < d.facilities.length; i++) {
           const f = d.facilities[i]
           try {
-            const coords = f.geometry.type === 'Point' ? f.geometry.coordinates : f.geometry.coordinates[0]
+            const coords = f.geometry.type === 'Point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
+            if (!coords) continue
             const fx = (coords[0] - d.minX) * sVal + this.data.offsetX + padX
             const fy = (coords[1] - d.minY) * sVal + this.data.offsetY + padY
-            if (Math.hypot(relX - fx, relY - fy) <= 12) {
-              hit = { meta: f, type: 'facility' }; break
-            }
-          } catch(e){}
+            const dist = Math.hypot(relX - fx, relY - fy)
+            if (dist <= 12) { hit = { meta: f, type: 'facility' }; break }
+          } catch (e) {}
         }
       }
 
-      // 判定 2：区域多边形判定
+      // 2. 区域多边形判定
       if (!hit) {
-        // const gx = (relX - this.data.offsetX - padX)/sVal + d.minX
-        // const gy = (relY - this.data.offsetY - padY)/sVal + d.minY
-        hit = d.regions.find(r => this._pointInPoly([gx, gy], r.coords[0]))
+        hit = d.regions.find(r => {
+          const ring = r.coords && r.coords[0]
+          return ring && this._pointInPoly([gx, gy], ring)
+        })
       }
 
       if (hit) {
         let meta = hit.meta || (hit.type === 'facility' ? hit.meta : null)
-        if (hit.kind) meta = Object.assign({}, meta, { __kind: hit.kind })
-        this.setData({ showRegionModal: true, activeRegion: this._normalizeRegionForModal(meta) })
+        if (hit.kind && meta && typeof meta === 'object') {
+          meta = Object.assign({}, meta, { __kind: hit.kind })
+        }
+        
+        const norm = this._normalizeRegionForModal(meta)
+        this.setData({ showRegionModal: true, activeRegion: norm })
+
+        // 3. 异步补全详情 (补齐负责人、联系方式等，并确保分类不被冲掉)
+        try {
+          const areaId = (norm && norm._raw && (norm._raw.id || norm._raw.pk)) || (norm && (norm.id || norm.pk))
+          // 设施弹窗不需要额外请求详情
+          if (areaId && !norm.is_facility && !norm.organizer_name) {
+            const tryPaths = []
+            if (norm.is_event) {
+              tryPaths.push(`/search/eventarea/${areaId}/`)
+            } else if (norm.is_shop) {
+              tryPaths.push(`/search/storearea/${areaId}/`)
+            } else {
+              tryPaths.push(`/search/otherarea/${areaId}/`)
+            }
+
+            const tryFetch = (i) => {
+              if (i >= tryPaths.length) return Promise.reject(new Error('no search endpoint succeeded'))
+              return util.apiRequest(tryPaths[i]).then(detail => detail).catch(() => tryFetch(i + 1))
+            }
+
+            tryFetch(0).then(detail => {
+              const more = this._normalizeRegionForModal(detail)
+              const merged = Object.assign({}, norm, more)
+              // 关键：强制保留原始识别出的类型标志位，防止返回数据没有 kind 导致分类降级
+              merged.is_facility = !!(norm.is_facility || more.is_facility)
+              merged.is_shop = !!(norm.is_shop || more.is_shop)
+              merged.is_event = !!(norm.is_event || more.is_event)
+              const mergedRaw = Object.assign({}, (norm && norm._raw) ? norm._raw : {}, (more && more._raw) ? more._raw : {})
+              if (norm && norm._raw && norm._raw.__kind && !mergedRaw.__kind) mergedRaw.__kind = norm._raw.__kind
+              merged._raw = mergedRaw
+              // 重新计算显示名称
+              merged.type_display = this._getRegionTypeDisplay(merged)
+              this.setData({ activeRegion: merged })
+            }).catch(err => console.warn('Navigation fetch area detail failed', err))
+          }
+        } catch (e) { console.warn('Area detail fetch prepare failed', e) }
       }
     }).exec()
+  },
+
+  _getRegionTypeDisplay(out) {
+    if (!out || typeof out !== 'object') return ''
+
+    // 1. 设施
+    if (out.is_facility) {
+      const code = out.type_code ?? out.type
+      const num = Number(code)
+      const key = (!Number.isNaN(num) && Number.isFinite(num)) ? num : String(code)
+      return FACILITY_TYPE_MAP[key] || '设施'
+    }
+
+    // 获取大类标识
+    const kind = (out._raw && out._raw.__kind) ? out._raw.__kind : undefined
+    
+    // 2. 活动区域：显示“活动类型”映射（例如 1 -> 促销活动）
+    if (out.is_event || kind === 'eventarea') {
+      const code = out.type_code ?? out.type
+      const num = Number(code)
+      const key = (!Number.isNaN(num) && Number.isFinite(num)) ? num : String(code)
+      return EVENT_AREA_TYPE_MAP[key] || '活动区域'
+    }
+
+    // 3. 商铺区域
+    if (out.is_shop || kind === 'storearea') {
+      return '商铺区域'
+    }
+
+    // 4. 其他区域：显示“其他区域类型”映射
+    const code = out.type_code ?? out.type
+    if (code !== undefined && code !== null && code !== '') {
+      const num = Number(code)
+      const key = (!Number.isNaN(num) && Number.isFinite(num)) ? num : String(code)
+      const mapped = OTHER_AREA_TYPE_MAP[key]
+      if (mapped) return mapped
+    }
+
+    return '其他区域'
   },
 
   _pointInPoly(pt, ring) {
@@ -645,33 +798,58 @@ Page({
   },
 
   _normalizeRegionForModal(raw) {
-      if (!raw || typeof raw !== 'object') return raw
-      const src = raw.properties || raw.attributes || raw
-      const pick = (keys) => {
-        for (let k of keys) { if (raw[k] !== undefined) return raw[k]; if (src && src[k] !== undefined) return src[k]; }
-        return undefined
+    if (!raw || typeof raw !== 'object') return raw
+    const src = raw.properties || raw.attributes || raw.store || raw
+    
+    // 辅助提取函数
+    const pick = (keys) => {
+      for (let k of keys) {
+        if (raw[k] !== undefined) return raw[k]
+        if (src && src[k] !== undefined) return src[k]
       }
-      const out = Object.assign({}, raw)
-      out.is_facility = !!(raw.geometry && (raw.geometry.type === 'Point' || raw.geometry.type === 'MultiPoint'))
-      out.is_shop = !!(pick(['store_name','name']) || raw.__kind === 'storearea')
-      out.is_event = !!(raw.__kind === 'eventarea')
-      out.facility_type = pick(['facility_type', 'type'])
-      out.type_code = pick(['type_code', 'type_id', 'type'])
-      
-      // 弹窗展示文本
-      if (out.is_facility) {
-        const code = Number(out.type_code)
-        out.type_display = FACILITY_TYPE_MAP[code] || '公共设施'
-      } else if (out.is_shop) {
-        out.type_display = '商铺区域'
-      } else if (out.is_event) {
-        out.type_display = this.data.eventareaTypeMap[out.type] || '活动区域'
-      } else {
-        out.type_display = this.data.otherareaTypeMap[out.type] || '其他区域'
-      }
-      
-      return out
-    },
+      return undefined
+    }
+
+    const out = {}
+    out.id = raw.id || raw.pk || src.id || src.pk
+    out.store_name = pick(['store_name', 'shop_name', 'name', 'title'])
+    out.name = out.store_name || pick(['name', 'title'])
+    out.phone = pick(['phone', 'phone_number', 'contact_phone', 'tel'])
+    out.open_time = pick(['open_time', 'open', 'business_hours'])
+    out.close_time = pick(['close_time', 'close'])
+    out.description = pick(['description', 'desc', 'detail', 'summary'])
+    out.type = pick(['type', 'facility_type', 'category'])
+    out.type_code = pick(['type_code', 'type_id', 'event_type_code', 'otherarea_type', 'category_code'])
+    
+    // 负责人与联系方式 (严谨映射)
+    out.organizer_name = pick(['organizer_name', 'organizer', 'owner_name', 'owner', 'manager', 'contact_person'])
+    out.organizer_phone = pick(['organizer_phone', 'organizer_tel', 'owner_phone', 'owner_tel', 'phone', 'contact_phone'])
+    out.contact_person = out.organizer_name // 兼容旧版WXML
+    out.owner_name = out.organizer_name     // 兼容旧版WXML
+    out.owner_phone = out.organizer_phone   // 兼容旧版WXML
+
+    // 分类判定逻辑（同步首页最强识别逻辑）
+    const kind = raw.__kind || (src && src.__kind)
+    const rawGeoType = raw && raw.geometry && raw.geometry.type
+    const srcGeoType = src && src.geometry && src.geometry.type
+
+    // 设施判定：地理坐标为点
+    out.is_facility = (rawGeoType === 'Point' || rawGeoType === 'MultiPoint' || srcGeoType === 'Point' || srcGeoType === 'MultiPoint')
+    
+    // 活动判定：kind匹配、显式标志位、或类型名称包含关键字
+    const typeLooksLikeEvent = (out.type && /event|activity|eventarea/i.test(String(out.type)))
+    const explicitEvent = raw.event_id || pick(['is_event', 'event', 'activity'])
+    out.is_event = !!(kind === 'eventarea' || explicitEvent || typeLooksLikeEvent || raw.is_event)
+
+    // 商铺判定
+    out.is_shop = !!((kind === 'storearea' || out.store_name || out.type === 'store') && !out.is_event && !out.is_facility)
+    
+    out.is_public = !!pick(['is_public', 'public'])
+    out._raw = raw
+    out.type_display = this._getRegionTypeDisplay(out)
+    
+    return out
+  },
 
   // 缩放/拖拽逻辑
   onTouchStart(e) {

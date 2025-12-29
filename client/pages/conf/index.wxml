@@ -1,23 +1,64 @@
-<!-- 我的页面 -->
+<!-- pages/conf/index.wxml -->
 <view class="container">
 	<view class="section">
-		<block wx:if="{{loggedIn && (profile && (profile.nickName || profile.account || profile.avatarUrl || profile.avatar))}}">
-			<!-- 单行：头像 + 昵称 + 右侧登出按钮 -->
+		<block wx:if="{{loggedIn}}">
 			<view class="profile-card row-card">
-				<image class="avatar" src="{{profile.avatarUrl || profile.avatar}}" mode="cover" />
+				<image class="avatar" src="{{profile.avatarUrl}}" mode="aspectFill" />
 				<view class="profile-info">
-					<view class="user-name">{{profile.nickName || profile.nick || profile.name || profile.account}}</view>
+					<view class="user-name">{{profile.nickName}}</view>
+					<view class="user-desc">{{profile.signature || '微信用户'}}</view>
 				</view>
-				<button class="btn logout" bindtap="confirmLogout">登出</button>
+				<button class="btn logout" bindtap="confirmLogout">退出登录</button>
+			</view>
+
+			<!-- pages/conf/index.wxml 搜索历史部分 -->
+			<view class="history-container" wx:if="{{searchHistory.length > 0}}">
+			<view class="history-header">
+				<text class="history-title">搜索历史</text>
+				<text class="history-clear" bindtap="clearHistory">全部清空</text>
+			</view>
+			
+			<view class="history-list-vertical">
+				<view class="history-item-box" wx:for="{{searchHistory}}" wx:key="id">
+				<!-- 第一行：类型 | 内容 -->
+				<view class="history-content-row">
+					<text class="h-type">{{item.type}}</text>
+					<text class="h-split">|</text>
+					<text class="h-kw">{{item.keyword}}</text>
+				</view>
+				<!-- 第二行：按钮组 -->
+				<view class="history-btn-row">
+					<view class="mini-btn btn-blue" bindtap="copyKeyword" data-text="{{item.keyword}}">复制</view>
+					<view class="mini-btn btn-green" bindtap="reSearch" data-item="{{item}}">再次搜索</view>
+					<view class="mini-btn btn-red" bindtap="deleteOneHistory" data-index="{{index}}">删除</view>
+				</view>
+				</view>
+			</view>
+			</view>
+				<view class="history-container" wx:else>
+				<view class="empty-history">暂无搜索记录</view>
 			</view>
 		</block>
 
-		<block wx:if="{{!loggedIn}}">
-			<view class="login-box">
-				<view class="login-text" bindtap="doLogin">未登录，点击登录</view>
+		<block wx:else>
+			<view class="login-form">
+				<view class="form-title">游客登录</view>
+				
+				<!-- 头像选择按钮：必须用 button 且 open-type="chooseAvatar" -->
+				<button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+					<image class="avatar-edit" src="{{tempAvatarUrl || '/images/tab/user-active.png'}}" mode="aspectFill"></image>
+					<view class="avatar-tip">选择头像</view>
+				</button>
+
+				<view class="input-group">
+					<text>昵称：</text>
+					<!-- 昵称输入框：必须 type="nickname" 才能触发微信昵称建议 -->
+					<input type="nickname" class="nickname-input" placeholder="请输入昵称" bindblur="onNicknameBlur" bindinput="onNicknameInput" value="{{tempNickName}}" />
+				</view>
+
+				<button class="btn-submit" bindtap="doLogin">保存并登录</button>
+				<view class="login-hint">登录后可暂存您的搜索历史</view>
 			</view>
 		</block>
-		<!-- 占位，避免页面内容被固定顶部遮挡 -->
-		<!-- 之前的 page-spacer 用于 fixed 顶部布局；现在不需要 -->
 	</view>
 </view>

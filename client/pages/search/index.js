@@ -33,6 +33,25 @@ Page({
     },
   },
 
+  // 处理 conf 页面"再次搜索"跳转
+  onShow() {
+    const tempSearch = wx.getStorageSync('tempSearch');
+    if (tempSearch) {
+      const { keyword, typeIndex } = tempSearch;
+      // 自动填充搜索框内容
+      // 自动切换选项菜单项
+      this.setData({
+        keyword: keyword,
+        typeIndex: typeIndex
+      }, () => {
+        // 自动执行搜索逻辑
+        this.doSearch();
+      });
+      // 清理临时缓存，避免以后点击底部Tab切换回搜索页时重复触发搜索
+      wx.removeStorageSync('tempSearch');
+    }
+  },
+
   // 辅助工具函数
   parseBool(val) {
     if (val === true || val === 1 || val === '1' || val === 'true') return true;
@@ -143,6 +162,20 @@ Page({
     if (!kw) return
 
     const currentType = this.data.searchTypes[this.data.typeIndex]
+
+    // 本地暂存历史记录
+    let history = wx.getStorageSync('searchHistory') || [];
+    // 过滤完全重复的记录（关键词和类型都一样才算重复）
+    history = history.filter(item => !(item.keyword === kw && item.type === currentType));
+    // 插入新记录，生成唯一的 id
+    history.unshift({
+      id: Date.now() + Math.random(), // 唯一标识符，确保每条记录在渲染层唯一
+      keyword: kw,
+      type: currentType,
+      typeIndex: this.data.typeIndex
+    });
+    if (history.length > 10) history = history.slice(0, 10);
+    wx.setStorageSync('searchHistory', history);
 
     // 1. 初始化状态
     this.setData({

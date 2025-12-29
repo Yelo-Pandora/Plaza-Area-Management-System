@@ -28,11 +28,11 @@
 
 	<!-- 搜索结果区域 -->
   	<view class="results-container">
-		<!-- 商铺搜索结果 -->
-		<view class="section" wx:if="{{storeResults.length > 0}}">
-			<view class="section-title">商铺</view>
+		<!-- 店铺搜索结果 -->
+		<view class="section results-section" wx:if="{{storeResults.length > 0}}">
+			<view class="category-tag">店 铺</view>
 			<view 
-				class="result-item" 
+				class="result-card" 
 				wx:for="{{storeResults}}" 
 				wx:key="id" 
 				bindtap="openStore" 
@@ -43,10 +43,10 @@
 			</view>
 		</view>
 		<!-- 活动搜索结果 -->
-		<view class="section" wx:if="{{eventResults.length > 0}}">
-			<view class="section-title">活动</view>
+		<view class="section results-section" wx:if="{{eventResults.length > 0}}">
+			<view class="category-tag">活 动</view>
 			<view 
-				class="result-item" 
+				class="result-card" 
 				wx:for="{{eventResults}}" 
 				wx:key="id" 
 				bindtap="openEvent" 
@@ -66,7 +66,7 @@
 	<view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal" catchtouchmove="true">
 		<view class="modal-content" catchtap="none">
 			<view class="modal-header">
-				<text class="modal-title">{{modalType === 'store' ? '商铺详情' : '活动详情'}}</text>
+				<text class="modal-title">{{modalType === 'store' ? '店铺详情' : '活动详情'}}</text>
 				<view class="close-icon" bindtap="closeModal">关闭</view>
 			</view>
 			
@@ -74,11 +74,11 @@
 				<view wx:if="{{modalLoading}}" class="modal-loading">加载中...</view>
 				
 				<block wx:else>
-					<!-- 商铺详情视图 -->
+					<!-- 店铺详情视图 -->
 					<view wx:if="{{modalType === 'store'}}">
 						<!-- 左侧图片，右侧名称与种类 -->
 						<view class="store-main-header">
-							<!-- 商铺图片：设置 mode="aspectFill" 确保正方形裁剪填充 -->
+							<!-- 店铺图片：设置 mode="aspectFill" 确保正方形裁剪填充 -->
 							<image 
 								class="store-main-image" 
 								src="{{modalDetail.image_url || '/images/default-store.png'}}" 
@@ -112,11 +112,11 @@
 							<text class="value">{{modalDetail.owner_phone}}</text>
 						</view>
 						<view class="detail-row">
-							<text class="label">商铺简介：</text>
+							<text class="label">店铺简介：</text>
 							<text class="value">{{modalDetail.description || '暂无简介'}}</text>
 						</view>
 						<view class="detail-row" wx:if="{{modalDetail.api_url}}">
-							<text class="label">商铺链接：</text>
+							<text class="label">店铺链接：</text>
 							<view 
 								class="value url-link" 
 								bindtap="handleLinkTap" 
@@ -202,7 +202,7 @@
 						<!-- 关联区域列表 -->
 						<view class="sub-section" wx:if="{{modalRelatedStoreareas.length > 0 || modalRelatedEventareas.length > 0}}">
 							<view class="sub-title">关联区域列表</view>
-							<!-- 循环显示商铺区域 -->
+							<!-- 循环显示店铺区域 -->
 							<view class="mini-card" wx:for="{{modalRelatedStoreareas}}" wx:key="id">
 								<view class="detail-row">
 									<view class="store-name-large">{{item.store_name}}</view>
