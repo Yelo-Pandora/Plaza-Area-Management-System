@@ -124,7 +124,6 @@ Page({
       if (Array.isArray(ev.area_type_codes) && ev.area_type_codes.length) {
         return ev.area_type_codes.includes(String(selected)) || ev.area_type_codes.includes(Number(selected))
       }
-      // 兜底：仍保留按事件自身 type_name 的筛选（兼容老数据）
       return (ev.type_name || '其他') === selected
     })
     this.setData({ filteredEvents: list })
@@ -139,7 +138,6 @@ Page({
       // 直接数组
       if (Array.isArray(res)) {
         list = res
-      // 常见的命名：events
       } else if (res && Array.isArray(res.events)) {
         list = res.events
       // Django REST Framework 分页格式：{count, next, previous, results: [...]}
@@ -166,7 +164,6 @@ Page({
 
       // 为了按关联区域的 `type` 属性分类筛选，需要请求每个事件的关联区域ID列表，
       // 再请求每个区域的详情以获取区域的 `type` 字段。
-      // 为减少重复请求，使用 areaCache 缓存已请求的区域详情（按 id）。
       const areaCache = {}
       const areaFetches = (normalized || []).map(ev => {
         const id = ev && ev.id
@@ -211,7 +208,6 @@ Page({
           (ev.area_type_codes || []).forEach(t => areaTypeSet.add(String(t)))
         })
 
-        // 示例映射：可按需调整或从后端获取更准确的映射
         const areaTypeLabelMap = { '1': '促销活动', '2': '展览活动', '3': '表演活动', '0': '其他活动'}
         const types = Array.from(areaTypeSet).map(k => ({ key: k, label: areaTypeLabelMap[k] || `类型 ${k}` }))
 
@@ -314,5 +310,4 @@ Page({
     this.setData({ showModal: false, modalEvent: null, modalAreas: [], modalLoading: false })
   },
 
-  // 弹窗相关功能已移除
 })
