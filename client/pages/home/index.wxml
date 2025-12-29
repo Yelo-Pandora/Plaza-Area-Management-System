@@ -23,7 +23,7 @@
 		<view class="modal-card" catchtouchmove="noop" catchtap="noop">
 			<view class="modal-close-x" bindtap="closeRegionModal">×</view>
 			<view class="modal-body">
-				<!-- 商铺优先展示（后端可能使用 store_name 字段或 type/store 类型标识） -->
+				<!-- 商铺优先展示 -->
 				<view wx:if="{{activeRegion && !activeRegion.is_facility && (activeRegion.store_name || activeRegion.type === 'store' || activeRegion.is_shop)}}">
 						<view class="info-card">
 							<view class="info-row">

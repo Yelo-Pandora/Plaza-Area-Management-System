@@ -75,7 +75,6 @@ Page({
       data: url,
       success: () => {
         // wx.setClipboardData 默认会弹出一个“内容已复制”的提示
-        // 可以追加一个业务提示
         wx.showModal({
           title: '链接已复制',
           content: '外部链接无法直接打开，请复制后在浏览器中粘贴访问。',
