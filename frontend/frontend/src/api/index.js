@@ -8,6 +8,7 @@ function buildUrl(path) {
 async function request(path, options = {}) {
   const url = buildUrl(path)
   const opts = Object.assign({
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json'
     }
@@ -27,7 +28,9 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
-    const err = new Error(data?.detail || res.statusText || 'API error')
+    // 处理后端返回的错误信息
+    const errorMsg = typeof data === 'object' ? (data.error || data.detail) : data
+    const err = new Error(errorMsg || res.statusText || 'API error')
     err.status = res.status
     err.data = data
     throw err

@@ -1,44 +1,33 @@
+
+================================================================================
+文件路径: Login.vue
+--------------------------------------------------------------------------------
+
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from './useAuthStore'
 
 const router = useRouter()
 const route = useRoute()
-const { login } = useAuthStore()
 
-const account = ref('')
+const username = ref('')
 const password = ref('')
-const loading = ref(false)
 const error = ref('')
 
 async function handleSubmit(e) {
   e.preventDefault()
-  if (loading.value) return
   error.value = ''
 
-  if (!account.value || !password.value) {
-    error.value = '请输入账号和密码'
+  if (!username.value || !password.value) {
+    error.value = '请输入用户名和密码'
     return
   }
 
-  loading.value = true
-  try {
-    // 登录
-    await login({
-      account: account.value,
-      password: password.value
-    })
+  // 目前仅做前端假登录，后续可对接后端认证接口
+  localStorage.setItem('auth_user', username.value)
 
-    // 2. 跳转
-    const redirect = route.query.redirect || '/'
-    router.push(redirect)
-  } catch (err) {
-    // 这里 err.message 是由 api/index.js 解析后端返回的 "error" 字段得到的
-    error.value = err.message || '登录失败，请检查账号或密码'
-  } finally {
-    loading.value = false
-  }
+  const redirect = route.query.redirect || '/'
+  router.push(redirect)
 }
 </script>
 
@@ -51,7 +40,12 @@ async function handleSubmit(e) {
       <form class="login-form" @submit="handleSubmit">
         <div class="form-item">
           <label for="username">用户名</label>
-          <input id="account" v-model="account" type="text" placeholder="请输入用户名">
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            placeholder="请输入用户名"
+          >
         </div>
 
         <div class="form-item">
@@ -68,8 +62,8 @@ async function handleSubmit(e) {
           {{ error }}
         </p>
 
-        <button class="login-btn" type="submit" :disabled="loading">
-          {{ loading ? '登录中...' : '登录' }}
+        <button class="login-btn" type="submit">
+          登录
         </button>
       </form>
     </div>
@@ -160,5 +154,7 @@ async function handleSubmit(e) {
   background-color: #1d4ed8;
 }
 </style>
+
+
 
 

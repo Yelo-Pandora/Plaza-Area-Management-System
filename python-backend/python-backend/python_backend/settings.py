@@ -158,7 +158,6 @@ CORS_ALLOWED_ORIGINS = [
   "http://localhost:8080"
 ]
 CORS_ALLOW_CREDENTIALS = True
-# 可根据需要自定义允许的头、方法
-# CORS_ALLOW_HEADERS = list(default_headers) + [
-#     'your-custom-header',
-# ]
+# 确保 Session 在跨域请求中也能被浏览器接受
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = False
