@@ -25,7 +25,14 @@ SECRET_KEY = '7306ec88-3719-40e9-88d4-2d6fdee59734'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# 允许的域名
+ALLOWED_HOSTS = ['yauycf.top', 'localhost', '127.0.0.1']
+
+# 信任 Nginx 传来的 HTTPS 头
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# 如果使用了 CSRF 保护，需要信任来源
+CSRF_TRUSTED_ORIGINS = ['https://yauycf.top']
 
 # Application references
 # https://docs.djangoproject.com/en/2.1/ref/settings/#std:setting-INSTALLED_APPS
@@ -155,7 +162,8 @@ REST_FRAMEWORK = {
 
 # CORS 设置（开发环境方便测试，生产请按需限制）
 CORS_ALLOWED_ORIGINS = [
-  "http://localhost:8080"
+  "http://localhost:8080",
+  "https://yauycf.top"
 ]
 CORS_ALLOW_CREDENTIALS = True
 # 确保 Session 在跨域请求中也能被浏览器接受
