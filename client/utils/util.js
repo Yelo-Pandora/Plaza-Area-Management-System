@@ -19,7 +19,7 @@ module.exports = {
 }
 
 // 后端 API 基础地址（开发时使用 localhost:8081，生产可替换）
-const baseUrl = 'http://http://yauycf.top/:8081/api'
+const baseUrl = 'https://yauycf.top'
 
 function apiRequest(path, method = 'GET', data = {}, options = {}) {
   const url = baseUrl + path
