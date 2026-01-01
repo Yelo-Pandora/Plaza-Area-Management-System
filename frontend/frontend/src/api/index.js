@@ -1,5 +1,5 @@
 // API 公共配置与 helper
-const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8081'
+const BACKEND_BASE = ''
 
 function buildUrl(path) {
   return `${BACKEND_BASE.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
