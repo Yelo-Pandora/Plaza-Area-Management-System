@@ -1,5 +1,6 @@
-import { watchPostEffect, onUnmounted } from 'vue'
+import { watchPostEffect, onUnmounted, nextTick } from 'vue'
 import { useMapEditorStore } from '../../composables/useMapEditorStore'
+import * as managementAPI from '@/api/management'
 import * as KonvaImport from 'konva'
 
 // --- 引入 SVG 图标 ---
@@ -22,6 +23,11 @@ const getKonva = () => {
 }
 
 const Konva = getKonva()
+
+// --- 配置常量 ---
+const LABEL_VISIBLE_THRESHOLD = 1.2
+const MIN_VISIBLE_FONT_SIZE = 10
+const ICON_BASE_RADIUS = 12
 
 export function useCanvasLogic(stageContainerRef) {
   const {
@@ -48,7 +54,7 @@ export function useCanvasLogic(stageContainerRef) {
   }
 
   // --- 图片资源管理 ---
-  const iconImages = {} // 存储加载好的 Image 对象
+  const iconImages = {}
   const iconSources = {
     0: escalatorIcon,
     1: fireExtinguisherIcon,
@@ -57,7 +63,6 @@ export function useCanvasLogic(stageContainerRef) {
     4: otherIcon
   }
 
-  // 预加载图标函数
   const loadIcons = () => {
     const promises = Object.keys(iconSources).map(type => {
       return new Promise((resolve) => {
@@ -69,44 +74,40 @@ export function useCanvasLogic(stageContainerRef) {
         }
         img.onerror = () => {
           console.warn(`Failed to load icon for type ${type}`)
-          resolve() // 即使失败也resolve，避免阻塞
+          resolve()
         }
       })
     })
-    // 图标加载完成后重绘一次，防止初次渲染为空白
     Promise.all(promises).then(() => {
       if (shapesLayer) shapesLayer.batchDraw()
     })
   }
 
-  // 立即开始加载图标
   loadIcons()
 
-  // --- 设施类型样式映射 ---
   const facilityStyles = {
-    0: { color: '#3b82f6' }, // 电梯 - 蓝
-    1: { color: '#ec4899' }, // 卫生间 - 粉
-    2: { color: '#10b981' }, // 安全出口 - 绿
-    3: { color: '#f59e0b' }, // 服务台 - 黄
-    4: { color: '#8b5cf6' }  // 其他 - 紫
+    0: { color: '#3b82f6' },
+    1: { color: '#ec4899' },
+    2: { color: '#10b981' },
+    3: { color: '#f59e0b' },
+    4: { color: '#8b5cf6' }
   }
 
-  // --- 辅助：获取区域名称 ---
+  // --- 辅助函数 ---
   const getAreaName = (area, type) => {
     if (type === 'storearea') return area.store_name || '未命名店铺'
     if (type === 'eventarea') {
-      const types = { 0: '通用活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
+      const types = { 0: '普通活动区域', 1: '促销活动', 2: '展览活动', 3: '表演活动' }
       return types[area.type] !== undefined ? types[area.type] : '活动区域'
     }
     if (type === 'otherarea') {
-      const types = { 0: '公共区域', 1: '卫生间', 2: '电梯间', 3: '其他区域' }
+      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他区域' }
       return types[area.type] !== undefined ? types[area.type] : '其他区域'
     }
     if (type === 'facility') return area.description || '设施'
     return ''
   }
 
-  // --- 辅助：计算多边形包围盒 ---
   const getBoundingBox = (points) => {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
     for (let i = 0; i < points.length; i += 2) {
@@ -127,7 +128,42 @@ export function useCanvasLogic(stageContainerRef) {
     }
   }
 
-  // --- 2. 自动适配视图 ---
+  // --- 视图更新逻辑 ---
+
+  const updateLabelVisibility = (scale) => {
+    if (!shapesLayer) return
+
+    // 查找所有的文字节点 (修正为查找 .area-label 而不是 .text-group)
+    const labels = shapesLayer.find('.area-label')
+    let hasChange = false
+
+    labels.forEach(label => {
+      const mapFontSize = label.fontSize()
+      const screenFontSize = mapFontSize * scale
+
+      const shouldVisible = screenFontSize >= MIN_VISIBLE_FONT_SIZE
+
+      if (label.visible() !== shouldVisible) {
+        label.visible(shouldVisible)
+        hasChange = true
+      }
+    })
+
+    if (hasChange) {
+      shapesLayer.batchDraw()
+    }
+  }
+
+  const updateIconsScale = (stageScale) => {
+    if (!shapesLayer) return
+    const groups = shapesLayer.find('.facility-group')
+    const invScale = 1 / stageScale
+
+    groups.forEach(group => {
+      group.scale({ x: invScale, y: invScale })
+    })
+  }
+
   const autoFitView = () => {
     const targetLayer = (baseLayer && baseLayer.hasChildren()) ? baseLayer : shapesLayer
     if (!stage || !targetLayer) return
@@ -152,10 +188,14 @@ export function useCanvasLogic(stageContainerRef) {
 
     stage.position({ x: centerX, y: centerY })
     stage.scale({ x: scale, y: scale })
+
+    updateLabelVisibility(scale)
+    updateIconsScale(scale)
+
     stage.batchDraw()
   }
 
-  // --- 3. 绘制逻辑 ---
+  // --- 绘制逻辑 ---
 
   const drawBaseMap = () => {
     if (!baseLayer || !currentMap.value || !currentMap.value.detail_geojson) return
@@ -194,7 +234,7 @@ export function useCanvasLogic(stageContainerRef) {
     baseLayer.batchDraw()
   }
 
-  // 绘制多边形区域 (带文字)
+  // 绘制多边形区域 (移除裁剪逻辑，直接绘制文字)
   const drawPolygon = (area, type) => {
     if (!area.geometry || !area.geometry.coordinates) return
 
@@ -209,10 +249,10 @@ export function useCanvasLogic(stageContainerRef) {
 
     const color = typeColors[type]
     const isSelected = selectedFeature.value?.id === area.id && selectedType.value === type
-
     const bounds = getBoundingBox(absolutePoints)
 
-    const group = new Konva.Group({
+    // 1. 主组
+    const mainGroup = new Konva.Group({
       x: bounds.centerX,
       y: bounds.centerY,
       draggable: true,
@@ -225,12 +265,15 @@ export function useCanvasLogic(stageContainerRef) {
       relativePoints.push(absolutePoints[i+1] - bounds.centerY)
     }
 
+    const currentScale = stage ? stage.scaleX() : 1
+
+    // 2. 多边形形状
     const poly = new Konva.Line({
       points: relativePoints,
       closed: true,
       fill: isSelected ? `${color}66` : `${color}33`,
       stroke: color,
-      strokeWidth: (isSelected ? 3 : 1) / (stage ? stage.scaleX() : 1),
+      strokeWidth: (isSelected ? 3 : 1) / currentScale,
       shadowColor: 'black',
       shadowBlur: isSelected ? 10 : 0,
       shadowOpacity: 0.3,
@@ -238,9 +281,15 @@ export function useCanvasLogic(stageContainerRef) {
       name: 'feature-shape'
     })
 
-    const areaName = getAreaName(area, type)
-    const fontSize = Math.min(bounds.width, bounds.height) / 4
+    mainGroup.add(poly)
 
+    const areaName = getAreaName(area, type)
+
+    // 计算字号：/8 比例
+    const fontSize = Math.min(bounds.width, bounds.height) / 8
+    const initialVisible = (fontSize * currentScale) >= MIN_VISIBLE_FONT_SIZE
+
+    // 3. 文字 (直接添加到主组，不再使用裁剪组)
     const text = new Konva.Text({
       x: -bounds.width / 2,
       y: -bounds.height / 2,
@@ -252,25 +301,29 @@ export function useCanvasLogic(stageContainerRef) {
       fill: '#1e293b',
       align: 'center',
       verticalAlign: 'middle',
-      ellipsis: true,
-      wrap: 'none',
+      wrap: 'word',    // 自动换行
+      ellipsis: false, // 禁用省略号，显示完整内容
+      padding: 2,      // 稍微减小内边距
       listening: false,
+      name: 'area-label', // 标记为标签
+      visible: initialVisible
     })
+    // 抵消缩放
     text.scale({ x: 1, y: 1 })
 
-    group.add(poly)
-    group.add(text)
+    mainGroup.add(text)
 
-    group.on('click tap', (e) => {
+    // 事件处理
+    mainGroup.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature(type, area)
     })
 
-    group.on('dragend', function() {
+    mainGroup.on('dragend', function() {
       handleGroupDragEnd(type, area, this, relativePoints)
     })
 
-    group.on('mouseenter', () => {
+    mainGroup.on('mouseenter', () => {
       stage.container().style.cursor = 'pointer'
       if (!isSelected) {
         poly.fill(`${color}55`)
@@ -278,7 +331,7 @@ export function useCanvasLogic(stageContainerRef) {
       }
     })
 
-    group.on('mouseleave', () => {
+    mainGroup.on('mouseleave', () => {
       stage.container().style.cursor = 'default'
       if (!isSelected) {
         poly.fill(`${color}33`)
@@ -287,13 +340,13 @@ export function useCanvasLogic(stageContainerRef) {
     })
 
     if (isSelected) {
-      group.moveToTop()
+      mainGroup.moveToTop()
     }
 
-    shapesLayer.add(group)
+    shapesLayer.add(mainGroup)
   }
 
-  // 绘制设施 (图标+圆形背景)
+  // 绘制设施
   const drawFacility = (facility) => {
     let x = 0, y = 0
     if (facility.location && typeof facility.location.x === 'number') {
@@ -306,30 +359,30 @@ export function useCanvasLogic(stageContainerRef) {
       return
     }
 
-    // 1. 根据类型获取样式配置
     const type = (facility.type !== undefined && facility.type !== null) ? facility.type : 4
     const style = facilityStyles[type] || facilityStyles[4]
     const isSelected = selectedFeature.value?.id === facility.id && selectedType.value === 'facility'
 
-    // 2. 计算半径
-    const baseRadius = 12
-    const radius = baseRadius / (stage ? stage.scaleX() : 1)
+    const currentStageScale = stage ? stage.scaleX() : 1
+    const invScale = 1 / currentStageScale
 
     const group = new Konva.Group({
       x: x,
       y: y,
       draggable: true,
-      id: `facility-${facility.id}`
+      id: `facility-${facility.id}`,
+      name: 'facility-group',
+      scaleX: invScale,
+      scaleY: invScale
     })
 
-    // 3. 背景圆
     const circle = new Konva.Circle({
       x: 0,
       y: 0,
-      radius: radius,
+      radius: ICON_BASE_RADIUS,
       fill: style.color,
       stroke: isSelected ? 'yellow' : 'white',
-      strokeWidth: (isSelected ? 3 : 1) / (stage ? stage.scaleX() : 1),
+      strokeWidth: isSelected ? 3 : 1,
       shadowColor: 'black',
       shadowBlur: isSelected ? 10 : 0,
       shadowOpacity: 0.3
@@ -337,11 +390,9 @@ export function useCanvasLogic(stageContainerRef) {
 
     group.add(circle)
 
-    // 4. SVG 图标 (Konva.Image)
     const imgObj = iconImages[type]
     if (imgObj) {
-      // 图标大小设为圆直径的 60% 左右，居中显示
-      const iconSize = radius * 1.4
+      const iconSize = ICON_BASE_RADIUS * 1.4
       const icon = new Konva.Image({
         image: imgObj,
         width: iconSize,
@@ -353,7 +404,6 @@ export function useCanvasLogic(stageContainerRef) {
       group.add(icon)
     }
 
-    // 事件绑定
     group.on('click tap', (e) => {
       e.cancelBubble = true
       selectFeature('facility', facility)
@@ -369,7 +419,6 @@ export function useCanvasLogic(stageContainerRef) {
 
     group.on('dragend', function() {
       facility.location = { x: this.x(), y: this.y() }
-      console.log(`[Save] 设施移动到: ${this.x()}, ${this.y()}`)
     })
 
     if (isSelected) {
@@ -391,7 +440,6 @@ export function useCanvasLogic(stageContainerRef) {
     shapesLayer.batchDraw()
   }
 
-  // --- 4. 数据保存逻辑 (适配 Group 模式) ---
   const handleGroupDragEnd = async (type, area, groupNode, relativePoints) => {
     const centerX = groupNode.x()
     const centerY = groupNode.y()
@@ -415,7 +463,6 @@ export function useCanvasLogic(stageContainerRef) {
     area.geometry = { type: 'Polygon', coordinates: [newCoords] }
   }
 
-  // --- 5. 初始化逻辑 ---
   const initKonva = () => {
     const container = stageContainerRef.value
     if (!container || !currentMap.value) return
@@ -451,6 +498,7 @@ export function useCanvasLogic(stageContainerRef) {
     stage.add(baseLayer)
     stage.add(shapesLayer)
 
+    // 缩放事件监听
     stage.on('wheel', (e) => {
       e.evt.preventDefault()
       const scaleBy = 1.1
@@ -473,14 +521,18 @@ export function useCanvasLogic(stageContainerRef) {
       }
       stage.position(newPos)
 
-      // 缩放后重绘
-      drawAllFeatures()
+      stage.batchDraw()
+
+      // 延迟更新文字显隐，避免缩放时闪烁
+      nextTick(() => {
+         updateLabelVisibility(newScale)
+         updateIconsScale(newScale)
+      })
     })
 
     drawBaseMap()
     drawAllFeatures()
     autoFitView()
-    drawAllFeatures() //第二次重绘解决刚绘图时图标大小异常的问题
   }
 
   // --- 6. 响应式监听 ---
@@ -495,6 +547,11 @@ export function useCanvasLogic(stageContainerRef) {
       } else {
         drawBaseMap()
         drawAllFeatures()
+        if (stage) {
+          const s = stage.scaleX()
+          updateLabelVisibility(s)
+          updateIconsScale(s)
+        }
       }
     }
   })
