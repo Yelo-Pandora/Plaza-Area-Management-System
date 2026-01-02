@@ -2,7 +2,7 @@
 const util = require('../../utils/util')
 
 // ===== 类型映射（用于首页地图详情弹窗显示） =====
-// 设施类型（示例：1 代表消防栓）
+// 设施类型
 const FACILITY_TYPE_MAP = {
   0: '电动扶梯',
   1: '灭火器',
@@ -30,7 +30,7 @@ const FACILITY_ICON_BASE_COLOR = {
 }
 
 // 活动区域“类型”映射（示例：1——促销活动）
-// 注意：这里映射的是“活动类型码”，不是 eventarea/storearea 这种区域大类。
+// 这里映射的是“活动类型码”，不是 eventarea/storearea 这种区域大类。
 const EVENT_AREA_TYPE_MAP = {
   0: '其他活动',
   1: '促销活动',
@@ -59,7 +59,7 @@ Page({
     recommended: [],
     maps: [],
     selectedMapIndex: 0,
-    // canvas transforms
+    // 画布变换参数
     scale: 1,
     offsetX: 0,
     offsetY: 0,
@@ -131,7 +131,7 @@ Page({
     return copy.slice(0, Math.min(n, copy.length))
   },
 
-  // ---------- Event normalization for home list (reuse logic from activities) ----------
+  // ---------- 首页列表的活动数据标准化（复用 activities 页面的逻辑） ----------
   _isOngoing(endVal) {
     if (!endVal) return false
     try {
@@ -183,7 +183,7 @@ Page({
     ev.is_ongoing = this._isOngoing(ev._raw_end)
     try { ev.start = this._formatDateStr(ev.start) } catch(e){}
     try { ev.end = this._formatDateStr(ev.end) } catch(e){}
-    // image field compatibility
+    // 图片字段兼容性处理
     ev.image_url = ev.image_url || ev.image || ev.imageUrl || ev.img || ev.thumbnail || ''
     return ev
   },
@@ -205,10 +205,10 @@ Page({
     wx.navigateTo({ url: `/pages/activities/index?event_id=${id}` })
   },
 
-  // ========== Map / Canvas logic ==========
+  // ========== 地图 / 画布 相关逻辑 ==========
   fetchMaps() {
     util.apiRequest('/maps/').then(res => {
-      // res expected to be array of maps
+      // res 预期是地图数组
       const maps = (res || []).map(m => ({ id: m.id, label: `${m.building_name || ''} 楼层 ${m.floor_number}`, raw: m }))
       this.setData({ maps })
       if (maps.length) this.loadMapDetail(0)
@@ -225,24 +225,24 @@ Page({
     const map = this.data.maps[index]
     if (!map) return
     util.apiRequest(`/maps/${map.id}/`).then(res => {
-      // replace raw with detail
+      // 替换 raw 为详细信息
       const maps = this.data.maps.slice()
       maps[index].raw = res
       this.setData({ maps })
-      // draw
+      // 绘制
       setTimeout(() => this.drawMap(), 50)
-      // fetch facilities for this map/floor
+      // 提取这一楼层的设施数据
       //this.fetchFacilitiesForMap(map.id)
     }).catch(err => console.error('加载地图详情失败', err))
   },
 
-  // fetch facilities for a given map id from backend
+  // 从后端获取指定地图ID的设施数据
   fetchFacilitiesForMap(mapId) {
     if (!mapId) return
     util.apiRequest(`/maps/${mapId}/facilities/`).then(res => {
-      // expect array or {results: []}
+      // 预期是数组或 {results: []}
       const list = Array.isArray(res) ? res : (res && res.results) ? res.results : []
-      // attach to corresponding map.raw
+      // 附加到对应的 map.raw
       const maps = this.data.maps.slice()
       const idx = maps.findIndex(m => m.id === mapId)
       if (idx >= 0) {
@@ -261,13 +261,13 @@ Page({
 
     const detail = map.raw.detail_geojson
     const ctx = wx.createCanvasContext('mapCanvas', this)
-    // canvas size: get system info to compute pixel ratio
+    // 画布大小：获取系统信息以计算像素比
     const query = wx.createSelectorQuery().in(this)
     query.select('.map-canvas').boundingClientRect(rect => {
-      // cache rect for touch handlers
+      // 缓存矩形区域用于触摸事件处理
       this._canvasRect = rect
       const w = rect.width, h = rect.height
-      // clear
+      // 清空
       ctx.clearRect(0, 0, w, h)
 
       if (!detail) {
@@ -277,7 +277,7 @@ Page({
         return
       }
 
-      // collect polygons from detail (GeoJSON)
+      // 从detail属性中提取polygon对象 (GeoJSON)
       const polygons = []
       if (detail.type === 'GeometryCollection' && Array.isArray(detail.geometries)) {
         detail.geometries.forEach(g => {
@@ -286,7 +286,7 @@ Page({
         })
       } else if (detail.type === 'Polygon') polygons.push(detail.coordinates)
 
-      // compute bbox
+      // 计算容器盒
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
       polygons.forEach(poly => {
         poly.forEach(ring => ring.forEach(pt => {
@@ -304,24 +304,22 @@ Page({
 
       const mapW = maxX - minX || 1
       const mapH = maxY - minY || 1
-      // compute scale to fit
+      // 计算合适的尺度
       const baseScale = Math.min(w / mapW, h / mapH)
       const s = baseScale * this.data.scale
 
-      // helper to convert geo (x,y) to canvas
+      // 绘制几何体的辅助函数
       const toCanvas = (x,y) => {
-        // translate so minX maps to 0, minY maps to 0, then apply scale, then center
         const cx = (x - minX) * s + this.data.offsetX + (w - mapW * s)/2
         const cy = (y - minY) * s + this.data.offsetY + (h - mapH * s)/2
         return [cx, cy]
       }
 
-      // draw base shell (first polygon as outer)
+      // 画出map底图（第一个元素作为外轮廓）
       ctx.setStrokeStyle('#333')
       ctx.setLineWidth(1)
       ctx.setFillStyle('#fff')
       polygons.forEach((poly, pi) => {
-        // poly: array of rings; first is outer
         poly.forEach((ring, ri) => {
           ring.forEach((pt, i) => {
             const [cx, cy] = toCanvas(pt[0], pt[1])
@@ -334,7 +332,7 @@ Page({
         ctx.stroke()
       })
 
-      // draw regions (stores / other / events)
+      // 画出区域（商铺 / 其他 / 活动）
       const regions = []
       const pushGeo = (list, color, kind) => {
         (list || []).forEach(it => {
@@ -382,7 +380,7 @@ Page({
       }
       const centroidOfRing = (ring) => {
         if (!Array.isArray(ring) || ring.length < 3) return null
-        // polygon centroid (area-weighted); fallback to average if degenerate
+        // 多边形质心（面积加权）；如果退化则回退到平均值
         let area = 0
         let cxSum = 0
         let cySum = 0
@@ -415,7 +413,6 @@ Page({
         ctx.fill()
       })
 
-      // labels on regions when zoomed in
       if (showLabels) {
         regions.forEach(r => {
           try {
@@ -439,7 +436,6 @@ Page({
         })
       }
 
-      // draw facility markers (points)
       const facilities = (map.raw.facilities || []).filter(f => f.geometry && (f.geometry.type === 'Point' || f.geometry.type === 'MultiPoint'))
       ctx.setFillStyle('rgba(255,120,40,0.95)')
       facilities.forEach(f => {
@@ -456,7 +452,6 @@ Page({
             const icon = FACILITY_ICON_MAP[key]
             const baseColor = FACILITY_ICON_BASE_COLOR[key] || 'rgba(24,144,255,0.95)'
 
-            // icon size grows with zoom but clamps to keep readable (slightly smaller)
             const iconSize = Math.max(10, Math.min(22, Math.round(10 * (this.data.scale || 1))))
             if (icon) {
               // 白色图标在白底地图上不清晰：先画一个高对比底座再叠加图标
@@ -472,7 +467,6 @@ Page({
               }
               ctx.drawImage(icon, cx - iconSize / 2, cy - iconSize / 2, iconSize, iconSize)
             } else {
-              // fallback to dot marker
               ctx.setFillStyle('rgba(255,120,40,0.95)')
               const rMark = Math.max(2, Math.min(6, Math.round(2 * (baseScale * this.data.scale))))
               ctx.beginPath()
@@ -489,17 +483,17 @@ Page({
         } catch (e) {}
       })
 
-      // save regions and facilities for hit-testing
+      // 检验区域、设备的碰撞后进行保存
       this._drawn = { polygons, regions, minX, minY, mapW, mapH, baseScale, canvasW: w, canvasH: h, facilities }
       ctx.draw()
     }).exec()
   },
 
-  // touch handlers for pan
+  // 触摸开始
   onTouchStart(e) {
     const touches = e.touches || []
     if (touches.length >= 2) {
-      // pinch start
+      // 双指缩放开始
       const r = this._canvasRect
       const p1 = touches[0]
       const p2 = touches[1]
@@ -509,7 +503,7 @@ Page({
       const y2 = p2.clientY - (r ? r.top : 0)
       const distance = Math.hypot(x2 - x1, y2 - y1)
       const centerClient = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }
-      // compute geo center using current transform
+      // 计算变化后的几何中心
       const d = this._drawn
       if (d) {
         const s = d.baseScale * this.data.scale
@@ -526,7 +520,7 @@ Page({
   },
   onTouchMove(e) {
     const touches = e.touches || []
-    // pinch handling
+    // 双指缩放处理
     if (touches.length >= 2 && this._pinchStart && this._canvasRect && this._drawn) {
       const r = this._canvasRect
       const p1 = touches[0]
@@ -538,10 +532,10 @@ Page({
       const distance = Math.hypot(x2 - x1, y2 - y1)
       const scaleFactor = distance / this._pinchStart.distance
       let newScale = this._pinchStart.baseScaleValue * scaleFactor
-      // clamp scale
+      // 限制缩放比例范围
       newScale = Math.max(0.2, Math.min(newScale, 6))
 
-      // compute new offsets so geoCenter stays under same client center
+      // 计算新的偏移量，使地理中心保持在同一个客户端中心点下
       const d = this._drawn
       const sPrime = d.baseScale * newScale
       const centerClient = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 }
@@ -559,7 +553,7 @@ Page({
       return
     }
 
-    // single-touch pan
+    // 单指拖动
     const t = touches[0]
     if (!t || !this._touchStart) return
     const dx = t.clientX - this._touchStart.x
@@ -567,12 +561,12 @@ Page({
     this.setData({ offsetX: this._touchStart.startOffsetX + dx, offsetY: this._touchStart.startOffsetY + dy }, () => this.drawMap())
   },
   onTouchEnd(e) {
-    // clear touch/pinch state
+    // 清除触摸/缩放状态
     this._touchStart = null
     this._pinchStart = null
   },
 
-  // zoom buttons
+  // 缩放按钮
   zoomIn() {
     const newScale = Math.min(this.data.scale * 1.2, 6)
     this.setData({ scale: newScale }, () => {
@@ -598,14 +592,14 @@ Page({
     }, 800)
   },
 
-  // tap to detect region
+  // 点击检测区域
   onCanvasTap(e) {
-    // compute client coords
+    // 计算客户端坐标
     const clientX = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientX) || (e.touches && e.touches[0] && e.touches[0].clientX) || e.detail.x
     const clientY = (e.changedTouches && e.changedTouches[0] && e.changedTouches[0].clientY) || (e.touches && e.touches[0] && e.touches[0].clientY) || e.detail.y
     if (!this._drawn) return
 
-    // get canvas position to convert client coords -> canvas local coords
+    // 获取 canvas 位置以将客户端坐标转换为 canvas 本地坐标
     const query = wx.createSelectorQuery().in(this)
     query.select('.map-canvas').boundingClientRect(rect => {
       if (!rect) return
@@ -618,7 +612,7 @@ Page({
       const gx = (relX - this.data.offsetX - (rect.width - mapW * s)/2)/s + minX
       const gy = (relY - this.data.offsetY - (rect.height - mapH * s)/2)/s + minY
 
-      // check facility points first (prefer tapping marker)
+      // 优先检测设施点（优先点击标记）
       let hit = null
       if (d.facilities && d.facilities.length) {
         const sVal = d.baseScale * this.data.scale
@@ -637,7 +631,7 @@ Page({
         }
       }
 
-      // then check polygon regions
+      // 然后检测多边形区域
       if (!hit) {
         hit = d.regions.find(r => {
           const ring = r.coords[0]
@@ -646,7 +640,7 @@ Page({
       }
 
       if (hit) {
-        // if facility marker, show meta; if polygon region, include its kind for correct classification
+        // 如果是设施标记，显示元数据；如果是多边形区域，包含其种类以便正确分类
         let meta = hit.meta || (hit.type === 'facility' ? hit.meta : null)
         if (hit.kind && meta && typeof meta === 'object') {
           // 不直接污染原对象，浅拷贝并带上 __kind
@@ -661,7 +655,7 @@ Page({
           const areaId = (norm && norm._raw && (norm._raw.id || norm._raw.pk)) || (norm && (norm.id || norm.pk))
           // 设施弹窗只需展示类型：不要再发起详情请求，避免合并结果覆盖 is_facility 导致走回退分支
           if (areaId && !norm.is_facility && !norm.organizer_name && !norm.organizer_phone) {
-            // 根据类型选择合适的 search 接口；活动区域不要回退到 otherarea，避免覆盖分类
+            // 根据类型选择合适的 search 接口；活动区域不回退到 otherarea，避免覆盖分类
             const tryPaths = []
             if (norm.is_event) {
               tryPaths.push(`/search/eventarea/${areaId}/`)
@@ -701,7 +695,7 @@ Page({
     }).exec()
   },
 
-  // normalize various backend shapes into common fields used by modal
+  // 将各种后端数据结构标准化为弹窗使用的通用字段
   _formatTypeCodeDisplay(code, map, unknownPrefix) {
     if (code === undefined || code === null || code === '') return ''
     const num = Number(code)
@@ -790,33 +784,33 @@ Page({
     out.organizer_name = pick(['organizer_name','organizer','organizerName','owner','owner_name','ownerName','manager','contact_person','contact_name'])
     out.organizer_phone = pick(['organizer_phone','organizer_tel','organizer_phone_number','organizer_contact','organizer_contact_phone','organizer_mobile','organizer_mobile_phone','phone','tel','contact'])
     out.contact_person = out.organizer || out.organizer_name
-    // area_type/area_type_codes detection
+    // area_type/area_type_codes 检测
     out.area_type = pick(['area_type','areaType','area_type_code','area_type_codes','facility_type','type'])
-    // owner fields for store areas
+    // 商铺区域的所有者字段
     out.owner_name = pick(['owner_name','owner','shop_owner','manager_name'])
     out.owner_phone = pick(['owner_phone','owner_tel','owner_phone_number','owner_contact'])
-    // determine if this is an event area — prefer explicit kind from hit-testing
+    // 确定是否为活动区域 —— 优先使用点击检测中明确的种类
     const kind = raw.__kind || (src && src.__kind)
     if (kind === 'eventarea') {
       out.is_event = true
       if (!out.area_type) out.area_type = 'eventarea'
     }
 
-    // determine if this is an event area — require stronger indicators to avoid false positives for facilities
+    // 确定是否为活动区域 —— 需要更强的标识以避免误判为设施
     const explicitEvent = raw.event_id || pick(['is_event','event','activity','activity_id','event_id'])
     const typeLooksLikeEvent = (out.type && /event|activity|eventarea/i.test(String(out.type))) || (out.area_type && /event|activity|eventarea/i.test(String(out.area_type)))
-    // also consider area_type codes that equal 'eventarea' or similar
+
     const areaTypeRaw = (src && (src.area_type || src.areaType || src.area_type_code || src.area_type_codes)) || raw.area_type || raw.areaType
     const areaTypeLooksEvent = areaTypeRaw && /event|activity|eventarea/i.test(String(areaTypeRaw))
     const hasOrganizerAndTime = !!(out.organizer_name && pick(['start','begin','start_time','date','start_time']))
     out.is_event = !!(out.is_event || explicitEvent || typeLooksLikeEvent || areaTypeLooksEvent || hasOrganizerAndTime || raw.is_event)
-    // mark facility (point) explicitly to distinguish from polygon areas
-    // facilities may be Point or MultiPoint (we draw both)
+    // 明确标记设施（点），以区别于多边形区域
+    // 设施可能是 Point 或 MultiPoint
     const rawGeoType = raw && raw.geometry && raw.geometry.type
     const srcGeoType = src && src.geometry && src.geometry.type
     out.is_facility = (rawGeoType === 'Point' || rawGeoType === 'MultiPoint' || srcGeoType === 'Point' || srcGeoType === 'MultiPoint')
     out.is_shop = !!(out.store_name || out.type === 'store' || out.type === 'shop' || raw.is_shop)
-    // include original object for any extra fields
+    // 包含原始对象以获取任何额外字段
     out._raw = raw
     out.type_display = this._getRegionTypeDisplay(out)
     return out
@@ -834,7 +828,7 @@ Page({
     return inside
   },
 
-  // modal close
+  // 关闭弹窗
   closeRegionModal() {
     this._lockScrollTop = null
     this.setData({ showRegionModal: false, activeRegion: null })

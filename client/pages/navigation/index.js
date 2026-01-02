@@ -197,8 +197,7 @@ Page({
         }
         this._pendingMapId = null; // 处理完即销毁
       }
-      // 修复核心：在加载详情前，先将正确的索引同步到 data 中
-      // 这样后续 loadMapDetail 触发 drawMap 时，idx 才是正确的
+
       this.setData({ 
         maps,
         selectedMapIndex: targetIdx 
@@ -340,7 +339,7 @@ Page({
       end: { x: endPoint.x, y: endPoint.y }
     };
     console.log('导航请求参数:', params)
-    // 调用接口 (注意：根据 util.js 封装，需要指定 'POST')
+    // 调用接口
     util.apiRequest('/guide/route/','POST', params).then(res => {
       wx.hideLoading();
       if (res && res.route && res.route.coordinates) {
@@ -490,7 +489,7 @@ Page({
             if (i === 0) ctx.moveTo(cx, cy)
             else ctx.lineTo(cx, cy)
           })
-          ctx.closePath() // 必须在这里！每个 Ring 绘制完立刻关闭，形成闭合子路径
+          ctx.closePath()
         })
         // 当一个路径包含多个闭合子路径时，Canvas 使用非零环绕原则实现镂空
         ctx.fill()
@@ -520,7 +519,6 @@ Page({
         ctx.closePath(); ctx.fill()
       })
 
-      // === 严格抄自 home/index.js 的区域名称渲染逻辑 ===
       if (showLabels) {
         regions.forEach(r => {
           try {
@@ -821,14 +819,14 @@ Page({
     out.type = pick(['type', 'facility_type', 'category'])
     out.type_code = pick(['type_code', 'type_id', 'event_type_code', 'otherarea_type', 'category_code'])
     
-    // 负责人与联系方式 (严谨映射)
+    // 负责人与联系方式
     out.organizer_name = pick(['organizer_name', 'organizer', 'owner_name', 'owner', 'manager', 'contact_person'])
     out.organizer_phone = pick(['organizer_phone', 'organizer_tel', 'owner_phone', 'owner_tel', 'phone', 'contact_phone'])
     out.contact_person = out.organizer_name // 兼容旧版WXML
     out.owner_name = out.organizer_name     // 兼容旧版WXML
     out.owner_phone = out.organizer_phone   // 兼容旧版WXML
 
-    // 分类判定逻辑（同步首页最强识别逻辑）
+    // 分类判定逻辑
     const kind = raw.__kind || (src && src.__kind)
     const rawGeoType = raw && raw.geometry && raw.geometry.type
     const srcGeoType = src && src.geometry && src.geometry.type
