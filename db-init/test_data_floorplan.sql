@@ -14,8 +14,8 @@ RESTART IDENTITY CASCADE;
 
 -- Admin (unchanged)
 INSERT INTO "admin" (account, password, name) VALUES 
-('admin', 'pbkdf2_sha256$260000$12345salt$jKqW1/8dK+XX+XX+XX+XX+XX+XX+XX+XX+XX+XX=', 'Super Admin'),
-('manager', 'pbkdf2_sha256$260000$12345salt$jKqW1/8dK+XX+XX+XX+XX+XX+XX+XX+XX+XX+XX=', 'Store Manager');
+('admin', 'pbkdf2_sha256$1000000$980cOulSX3vlCCloSs2ove$66ySapvBsD5+8e54mupZt9S0nt9Eol7f7F/2jDUDQKQ=', 'Super Admin'),
+('manager', 'pbkdf2_sha256$1000000$980cOulSX3vlCCloSs2ove$66ySapvBsD5+8e54mupZt9S0nt9Eol7f7F/2jDUDQKQ=', 'Store Manager');
 
 DO $$
 DECLARE
