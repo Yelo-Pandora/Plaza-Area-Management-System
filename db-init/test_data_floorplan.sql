@@ -51,7 +51,7 @@ BEGIN
         'F' || v_floor || '-Store 001 URBAN STYLE 旗舰店',
         'F' || v_floor || '-Owner 001 陈美玲',
         '0912-345-678',
-        'https://yauycf.top/root/images/store/UR.png',
+        'https://yauycf.top/images/store/UR.png',
         '10:00:00', '22:00:00',
         2,
         NULL,
@@ -68,7 +68,7 @@ BEGIN
         'F' || v_floor || '-Store 002 Apple Store Taipei 101',
         'F' || v_floor || '-Owner 002 张致远',
         '0918-888-999',
-        'https://yauycf.top/root/images/store/apple.png',
+        'https://yauycf.top/images/store/apple.png',
         '10:00:00', '22:00:00',
         3,
         NULL,
@@ -85,7 +85,7 @@ BEGIN
         'F' || v_floor || '-Store 003 星巴克 Reserve Bar',
         'F' || v_floor || '-Owner 003 林雅婷',
         '0920-555-666',
-        'https://yauycf.top/root/images/store/starbucks.png',
+        'https://yauycf.top/images/store/starbucks.png',
         '07:00:00', '23:00:00',
         1,
         NULL,
@@ -102,7 +102,7 @@ BEGIN
         'F' || v_floor || '-Store 004 Sephora 亚洲旗舰店',
         'F' || v_floor || '-Owner 004 王诗涵',
         '0933-777-888',
-        'https://yauycf.top/root/images/store/sephora.png',
+        'https://yauycf.top/images/store/sephora.png',
         '11:00:00', '22:00:00',
         4,
         NULL,
@@ -119,7 +119,7 @@ BEGIN
         'F' || v_floor || '-Store 005 Kidzania 儿童职业体验城',
         'F' || v_floor || '-Owner 005 黄志明',
         '0910-123-456',
-        'https://yauycf.top/root/images/store/KidZania.png',
+        'https://yauycf.top/images/store/KidZania.png',
         '09:30:00', '20:30:00',
         3,
         NULL,
@@ -136,7 +136,7 @@ BEGIN
         'F' || v_floor || '-Store 006 诚品生活 Eslite Spectrum',
         'F' || v_floor || '-Owner 006 吴嘉豪',
         '0922-333-444',
-        'https://yauycf.top/root/images/store/eslite.png',
+        'https://yauycf.top/images/store/eslite.png',
         '10:00:00', '24:00:00',
         0,
         NULL,
@@ -153,7 +153,7 @@ BEGIN
         'F' || v_floor || '-Store 007 World Gym 科技旗舰店',
         'F' || v_floor || '-Owner 007 刘建华',
         '0935-678-901',
-        'https://yauycf.top/root/images/store/world gym.png',
+        'https://yauycf.top/images/store/world gym.png',
         '06:00:00', '24:00:00',
         4,
         NULL,
@@ -170,7 +170,7 @@ BEGIN
         'F' || v_floor || '-Store 008 鼎泰丰 小笼包专卖',
         'F' || v_floor || '-Owner 008 李正元',
         '0916-789-012',
-        'https://yauycf.top/root/images/store/dingtaifeng.png',
+        'https://yauycf.top/images/store/dingtaifeng.png',
         '11:00:00', '21:00:00',
         1,
         NULL,
@@ -187,7 +187,7 @@ BEGIN
         'F' || v_floor || '-Store 009 Studio A 苹果授权经销商',
         'F' || v_floor || '-Owner 009 蔡文杰',
         '0925-456-789',
-        'https://yauycf.top/root/images/store/studio_a.png',
+        'https://yauycf.top/images/store/studio_a.png',
         '11:00:00', '21:30:00',
         0,
         NULL,
@@ -204,7 +204,7 @@ BEGIN
         'F' || v_floor || '-Store 010 Cartier 卡地亚精品店',
         'F' || v_floor || '-Owner 010 法国总部直营',
         '+33158181800',
-        'https://yauycf.top/root/images/store/cartier.png',
+        'https://yauycf.top/images/store/cartier.png',
         '11:00:00', '20:00:00',
         0,
         NULL,
@@ -221,7 +221,7 @@ BEGIN
         'F' || v_floor || '-Store 011 NIKE Rise 概念店',
         'F' || v_floor || '-Owner 011 王健雄',
         '0930-111-222',
-        'https://yauycf.top/root/images/store/NIKE rise.png',
+        'https://yauycf.top/images/store/NIKE rise.png',
         '09:00:00', '22:00:00',
         2,
         NULL,
@@ -238,7 +238,7 @@ BEGIN
         'F' || v_floor || '-Store 012 MUJI 家居生活馆',
         'F' || v_floor || '-Owner 012 李佳蓉',
         '0915-333-444',
-        'https://yauycf.top/root/images/store/muji.png',
+        'https://yauycf.top/images/store/muji.png',
         '10:30:00', '22:00:00',
         3,
         NULL,
@@ -255,7 +255,7 @@ BEGIN
         'F' || v_floor || '-Store 013 松本清 Matsumoto Kiyoshi',
         'F' || v_floor || '-Owner 013 田中一郎',
         '0919-555-666',
-        'https://yauycf.top/root/images/store/matsumoto_kiyoshi.png',
+        'https://yauycf.top/images/store/matsumoto_kiyoshi.png',
         '09:00:00', '22:00:00',
         4,
         NULL,
@@ -272,7 +272,7 @@ BEGIN
         'F' || v_floor || '-Store 014 PETsMART 宠物百货',
         'F' || v_floor || '-Owner 014 陈爱宠',
         '0928-777-888',
-        'https://yauycf.top/root/images/store/petsMART.png',
+        'https://yauycf.top/images/store/petsMART.png',
         '10:00:00', '21:30:00',
         5,
         NULL,
@@ -289,7 +289,7 @@ BEGIN
         'F' || v_floor || '-Store 015 Whole Foods Market 全食超市',
         'F' || v_floor || '-Owner 015 张健康',
         '0932-999-000',
-        'https://yauycf.top/root/images/store/wholeFoodsMarket-logo.png',
+        'https://yauycf.top/images/store/wholeFoodsMarket-logo.png',
         '08:00:00', '22:00:00',
         1,
         NULL,
@@ -306,7 +306,7 @@ BEGIN
         'F' || v_floor || '-Store 016 B&O Play 听觉实验室',
         'F' || v_floor || '-Owner 016 林音悦',
         '0911-222-333',
-        'https://yauycf.top/root/images/store/B&O Play.png',
+        'https://yauycf.top/images/store/B&O Play.png',
         '11:00:00', '22:00:00',
         2,
         NULL,
@@ -323,7 +323,7 @@ BEGIN
         'F' || v_floor || '-Store 017 Hands Craft Studio 手作实验室',
         'F' || v_floor || '-Owner 017 王艺师',
         '0920-444-555',
-        'https://yauycf.top/root/images/store/Hands Craft.png',
+        'https://yauycf.top/images/store/Hands Craft.png',
         '11:00:00', '21:00:00',
         3,
         NULL,
@@ -340,7 +340,7 @@ BEGIN
         'F' || v_floor || '-Store 018 TWININGS 皇家茶廊',
         'F' || v_floor || '-Owner 018 英国总部直营',
         '+442073520000',
-        'https://yauycf.top/root/images/store/TWININGS.png',
+        'https://yauycf.top/images/store/TWININGS.png',
         '09:00:00', '22:00:00',
         4,
         NULL,
@@ -357,7 +357,7 @@ BEGIN
         'F' || v_floor || '-Store 019 VR ZONE 虚拟实境乐园',
         'F' || v_floor || '-Owner 019 陈科技',
         '0917-666-777',
-        'https://yauycf.top/root/images/store/VR ZONE.png',
+        'https://yauycf.top/images/store/VR ZONE.png',
         '09:00:00', '22:00:00',
         5,
         NULL,
@@ -374,7 +374,7 @@ BEGIN
         'F' || v_floor || '-Store 020 海马体 HIMO 证件照专门店',
         'F' || v_floor || '-Owner 020 林摄影',
         '0925-888-999',
-        'https://yauycf.top/root/images/store/haimaiti.png',
+        'https://yauycf.top/images/store/haimaiti.png',
         '09:40:00', '22:40:00',
         1,
         NULL,
@@ -621,7 +621,7 @@ BEGIN
     -- Events: only generate & associate with Floor 1 areas (explicitly listed for easy editing)
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('万圣节惊奇派对', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/halloween.png', TRUE, '万圣节主题狂欢派对，包含鬼屋探险、变装比赛、南瓜雕刻工作坊、不给糖就捣蛋路线。现场提供免费化妆服务、恐怖主题美食摊位。')
+    VALUES ('万圣节惊奇派对', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/halloween.png', TRUE, '万圣节主题狂欢派对，包含鬼屋探险、变装比赛、南瓜雕刻工作坊、不给糖就捣蛋路线。现场提供免费化妆服务、恐怖主题美食摊位。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -637,7 +637,7 @@ BEGIN
             AND e.description = '长形走廊展示区，配备交互式触摸屏、VR体验站、智能家居模拟间及新品发布舞台。两侧设有品牌展示柜。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('科技新品发布', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/tech_launch.png', TRUE, '深度融合"展示、销售、互动、体验"，打造沉浸式场景。')
+    VALUES ('科技新品发布', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/tech_launch.png', TRUE, '深度融合"展示、销售、互动、体验"，打造沉浸式场景。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -653,7 +653,7 @@ BEGIN
             AND e.description = '互动科学实验区，配备物理实验装置、化学实验台、天文望远镜及机器人编程工作站。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('2024毛小孩时装周', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/pet_fashion.png', TRUE, '宠物时装走秀比赛，设有创意造型组、亲子配对组、最佳才艺组。现场提供宠物美容服务、摄影棚、领养服务摊位。冠军可获得宠物百货购物金1万元。')
+    VALUES ('2024毛小孩时装周', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/pet_fashion.png', TRUE, '宠物时装走秀比赛，设有创意造型组、亲子配对组、最佳才艺组。现场提供宠物美容服务、摄影棚、领养服务摊位。冠军可获得宠物百货购物金1万元。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -669,7 +669,7 @@ BEGIN
             AND e.description = '可容纳200人的剧场，配备专业舞台灯光、音响系统、遮阳棚及阶梯式观众席。适合举办音乐会、话剧、舞蹈表演。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('有机生活节', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/organic_lifestyle.png', TRUE, '倡导环保永续生活方式，包含有机农产品展售、零废弃工作坊、环保手作体验、绿色饮食讲座。现场设有二手物交换站、环保杯租借服务。')
+    VALUES ('有机生活节', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/organic_lifestyle.png', TRUE, '倡导环保永续生活方式，包含有机农产品展售、零废弃工作坊、环保手作体验、绿色饮食讲座。现场设有二手物交换站、环保杯租借服务。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -685,7 +685,7 @@ BEGIN
             AND e.description = '长形走廊展示区，配备交互式触摸屏、VR体验站、智能家居模拟间及新品发布舞台。两侧设有品牌展示柜。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('电竞狂欢节', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/esports.png', TRUE, '专业比赛舞台配备实时转播，现场提供电竞设备体验区、选手签名会。')
+    VALUES ('电竞狂欢节', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/esports.png', TRUE, '专业比赛舞台配备实时转播，现场提供电竞设备体验区、选手签名会。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -701,7 +701,7 @@ BEGIN
             AND e.description = '长形走廊展示区，配备交互式触摸屏、VR体验站、智能家居模拟间及新品发布舞台。两侧设有品牌展示柜。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('冰品嘉年华', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/ice_carnival.png', TRUE, '汇聚20家特色冰品摊位，包含传统刨冰、创意冰淇淋、冻饮调酒。设有冰品造型比赛、大胃王挑战、DIY冰淇淋工作坊。')
+    VALUES ('冰品嘉年华', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/ice_carnival.png', TRUE, '汇聚20家特色冰品摊位，包含传统刨冰、创意冰淇淋、冻饮调酒。设有冰品造型比赛、大胃王挑战、DIY冰淇淋工作坊。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -717,7 +717,7 @@ BEGIN
             AND e.description = '美食摊位区，设有20个标准摊位、公共用餐区。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('小小科学家夏令营', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/kids_scientist.png', TRUE, '科学主题夏令营，每日不同主题：化学实验日、机器人编程日、天文观测日、生态探索日、科学成果展。适合7-12岁儿童参加。')
+    VALUES ('小小科学家夏令营', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/kids_scientist.png', TRUE, '科学主题夏令营，每日不同主题：化学实验日、机器人编程日、天文观测日、生态探索日、科学成果展。适合7-12岁儿童参加。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -733,7 +733,7 @@ BEGIN
             AND e.description = '可容纳200人的剧场，配备专业舞台灯光、音响系统、遮阳棚及阶梯式观众席。适合举办音乐会、话剧、舞蹈表演。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('时尚艺术周', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/fashion_art.png', TRUE, '结合时尚与艺术的跨界活动，包含新锐设计师时装秀、艺术装置展览、街头艺术创作、时尚摄影展。设有设计师对谈会及workshop。')
+    VALUES ('时尚艺术周', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/fashion_art.png', TRUE, '结合时尚与艺术的跨界活动，包含新锐设计师时装秀、艺术装置展览、街头艺术创作、时尚摄影展。设有设计师对谈会及workshop。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -749,7 +749,7 @@ BEGIN
             AND e.description = '可容纳200人的剧场，配备专业舞台灯光、音响系统、遮阳棚及阶梯式观众席。适合举办音乐会、话剧、舞蹈表演。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('茶文化深度体验月', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/tea_culture.png', TRUE, '为期一个月的茶文化主题活动，每周不同主题：台湾茶周、日本茶道周、英式下午茶周、创意调茶周。每日举办茶艺教学、品茶会、茶叶知识讲座。')
+    VALUES ('茶文化深度体验月', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/tea_culture.png', TRUE, '为期一个月的茶文化主题活动，每周不同主题：台湾茶周、日本茶道周、英式下午茶周、创意调茶周。每日举办茶艺教学、品茶会、茶叶知识讲座。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -765,7 +765,7 @@ BEGIN
             AND e.description = '美食摊位区，设有20个标准摊位、公共用餐区。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('圣诞魔法市集', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/christmas_market.png', TRUE, '全商场圣诞主题装饰，设置圣诞市集、圣诞老人屋、雪景拍照区、旋转木马。每日定时降雪秀、圣诞颂歌表演、圣诞礼物制作工作坊。')
+    VALUES ('圣诞魔法市集', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/christmas_market.png', TRUE, '全商场圣诞主题装饰，设置圣诞市集、圣诞老人屋、雪景拍照区、旋转木马。每日定时降雪秀、圣诞颂歌表演、圣诞礼物制作工作坊。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -781,7 +781,7 @@ BEGIN
             AND e.description = '长形走廊展示区，配备交互式触摸屏、VR体验站、智能家居模拟间及新品发布舞台。两侧设有品牌展示柜。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('跨年倒数派对', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/newyear_party.png', TRUE, '跨年倒数狂欢派对，设有主舞台DJ表演、荧光舞池、新年许愿墙、跨年烟火秀。现场提供免费小食饮料，倒数时刻全场气球降落。')
+    VALUES ('跨年倒数派对', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/newyear_party.png', TRUE, '跨年倒数狂欢派对，设有主舞台DJ表演、荧光舞池、新年许愿墙、跨年烟火秀。现场提供免费小食饮料，倒数时刻全场气球降落。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -797,7 +797,7 @@ BEGIN
             AND e.description = '长形走廊展示区，配备交互式触摸屏、VR体验站、智能家居模拟间及新品发布舞台。两侧设有品牌展示柜。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('亲子运动会', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/family_sports.png', TRUE, '适合全家参与的趣味运动竞赛，包含亲子三腿赛跑、爸爸背小孩障碍赛、妈妈推婴儿车竞速。现场设有儿童游乐区、亲子按摩站。')
+    VALUES ('亲子运动会', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/family_sports.png', TRUE, '适合全家参与的趣味运动竞赛，包含亲子三腿赛跑、爸爸背小孩障碍赛、妈妈推婴儿车竞速。现场设有儿童游乐区、亲子按摩站。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
@@ -813,7 +813,7 @@ BEGIN
             AND e.description = '可容纳200人的剧场，配备专业舞台灯光、音响系统、遮阳棚及阶梯式观众席。适合举办音乐会、话剧、舞蹈表演。(Generated, Floor 1)';
 
     INSERT INTO "event" (event_name, start_date, end_date, image_url, is_active, description)
-    VALUES ('年货大街', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/root/images/event/newyear_market.png', TRUE, '年货采购市集，包含年节食品、春联红包、新年装饰、伴手礼盒。设有年菜试吃区、写春联服务、舞龙舞狮表演、财神爷发红包。')
+    VALUES ('年货大街', NOW(), NOW() + INTERVAL '7 days', 'https://yauycf.top/images/event/newyear_market.png', TRUE, '年货采购市集，包含年节食品、春联红包、新年装饰、伴手礼盒。设有年菜试吃区、写春联服务、舞龙舞狮表演、财神爷发红包。')
     RETURNING id INTO v_event_id;
     INSERT INTO "event_storearea" (event_id, storearea_id)
         SELECT v_event_id, s.id
