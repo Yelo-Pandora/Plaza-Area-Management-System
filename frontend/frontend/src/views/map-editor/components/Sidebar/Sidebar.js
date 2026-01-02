@@ -50,8 +50,8 @@ export function useSidebarLogic() {
   const getOtherAreaDisplay = (area) => {
     const typeMap = {
       0: '公共区域',
-      1: '办公区域',
-      2: '设备区域',
+      1: '卫生间',
+      2: '电梯间',
       3: '其他区域'
     }
     const typeName = typeMap[area.type] || '其他区域'

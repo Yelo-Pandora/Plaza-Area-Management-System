@@ -101,7 +101,7 @@ export function useCanvasLogic(stageContainerRef) {
       return types[area.type] !== undefined ? types[area.type] : '活动区域'
     }
     if (type === 'otherarea') {
-      const types = { 0: '公共区域', 1: '办公区域', 2: '设备区域', 3: '其他区域' }
+      const types = { 0: '公共区域', 1: '卫生间', 2: '电梯间', 3: '其他区域' }
       return types[area.type] !== undefined ? types[area.type] : '其他区域'
     }
     if (type === 'facility') return area.description || '设施'
@@ -133,7 +133,7 @@ export function useCanvasLogic(stageContainerRef) {
   const updateLabelVisibility = (scale) => {
     if (!shapesLayer) return
 
-    // 查找所有的文字节点 (修正为查找 .area-label 而不是 .text-group)
+    // 查找所有的文字节点
     const labels = shapesLayer.find('.area-label')
     let hasChange = false
 

@@ -1,5 +1,5 @@
 /*
- * Test Data Generated from 平面图.jpeg
+ * Test Data Generated from 平面图.jpeg (Modified v2)
  * Target: PostgreSQL / PostGIS
  * SRID: 2385
  */
@@ -393,13 +393,7 @@ BEGIN
     ) RETURNING id INTO v_id;
     INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
 
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
-        1, TRUE, TRUE,
-        'Other Area 02 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((105.388 29.256, 109.387 29.256, 109.695 28.639, 115.546 28.639, 115.855 27.407, 124.171 27.407, 124.171 24.057, 119.572 24.057, 115.566 25.29, 107.255 25.905, 106.947 26.521, 98.017 27.138, 98.017 30.488, 103.231 30.488, 105.388 29.256))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
+    -- Other Area 02 REMOVED as requested
 
     INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
     VALUES (
@@ -417,29 +411,7 @@ BEGIN
     ) RETURNING id INTO v_id;
     INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
 
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
-        0, TRUE, TRUE,
-        'Other Area 05 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((127.725 76.204, 127.793 75.213, 126.985 75.213, 126.985 76.13, 127.725 76.204))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
-
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
-        0, TRUE, TRUE,
-        'Other Area 06 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((91.545 68.701, 92.122 68.701, 92.122 57.891, 91.545 57.953, 91.545 68.701))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
-
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
-        0, TRUE, TRUE,
-        'Other Area 07 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((102.331 30.528, 102.331 31.381, 105.065 32.024, 105.065 30.22, 103.78 30.22, 103.241 30.528, 102.331 30.528))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
+    -- Other Areas 05, 06, 07, 09 REMOVED as requested (Small/Enclosed)
 
     INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
     VALUES (
@@ -451,27 +423,13 @@ BEGIN
 
     INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
     VALUES (
-        0, TRUE, TRUE,
-        'Other Area 09 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((38.885 112.193, 38.229 112.496, 37.301 114.969, 34.473 114.341, 36.835 112.193, 35.87 112.193, 34.831 113.117, 32.686 113.117, 32.686 113.703, 35.138 115.542, 37.28 115.542, 39.117 113.705, 39.117 112.193, 38.885 112.193))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
-
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
         2, TRUE, TRUE,
         'Other Area 10 (Generated, Floor ' || v_floor || ')',
         ST_GeomFromText('POLYGON((148.824 132.5, 149.441 132.191, 149.441 129.45, 145.475 129.45, 145.475 130.979, 144.538 131.915, 143.622 131.915, 143.313 133.148, 140.544 133.148, 140.544 138.347, 148.824 138.347, 148.824 132.5))', 2385)
     ) RETURNING id INTO v_id;
     INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
 
-    INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
-    VALUES (
-        1, TRUE, TRUE,
-        'Other Area 11 (Generated, Floor ' || v_floor || ')',
-        ST_GeomFromText('POLYGON((74.863 128.834, 72.094 128.834, 71.786 126.984, 57.3 125.75, 56.992 120.821, 54.875 120.821, 55.491 135.304, 50.522 135.614, 50.214 133.764, 40.082 133.764, 40.082 138.347, 74.249 138.347, 74.863 128.834))', 2385)
-    ) RETURNING id INTO v_id;
-    INSERT INTO "otherarea_map" (otherarea_id, map_id) VALUES (v_id, v_map_id);
+    -- Other Area 11 REMOVED as requested (Unreasonable Restroom blocking path)
 
     INSERT INTO "otherarea" (type, is_public, is_active, description, shape)
     VALUES (
