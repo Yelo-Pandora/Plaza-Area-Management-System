@@ -10,3 +10,5 @@ markdown==3.7
 django-filter==24.3
 django-cors-headers==4.0.0
 ezdxf==1.1.0
+requests==2.31.0
+pyproj==3.6.1
