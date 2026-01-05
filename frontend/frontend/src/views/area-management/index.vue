@@ -17,7 +17,6 @@
             <option value="storearea">店铺区域</option>
             <option value="eventarea">活动区域</option>
             <option value="otherarea">其他区域</option>
-            <option value="event">活动</option>
           </select>
         </div>
 
@@ -193,7 +192,6 @@
                 <option value="storearea">店铺区域</option>
                 <option value="eventarea">活动区域</option>
                 <option value="otherarea">其他区域</option>
-                <option value="event">活动</option>
               </select>
             </div>
 
@@ -239,17 +237,9 @@
               </select>
             </div>
 
-            <div v-if="formData.type === 'event'" class="form-group">
-              <label class="form-label">活动类型</label>
-              <select v-model="formData.event_type" class="form-select">
-                <option value="0">普通活动</option>
-                <option value="1">促销活动</option>
-                <option value="2">展览活动</option>
-                <option value="3">表演活动</option>
-              </select>
-            </div>
 
-            <div v-if="formData.type !== 'event'" class="form-group">
+
+            <div class="form-group">
               <label class="form-label">所属地图</label>
               <select v-model="formData.map_id" class="form-select" required>
                 <option value="">请选择地图楼层</option>
@@ -295,25 +285,7 @@
               >
             </div>
 
-            <div v-if="formData.type === 'event'" class="form-group">
-              <label class="form-label">开始时间</label>
-              <input
-                v-model="formData.start_time"
-                type="datetime-local"
-                class="form-input"
-                placeholder="请选择开始时间"
-              >
-            </div>
 
-            <div v-if="formData.type === 'event'" class="form-group">
-              <label class="form-label">结束时间</label>
-              <input
-                v-model="formData.end_time"
-                type="datetime-local"
-                class="form-input"
-                placeholder="请选择结束时间"
-              >
-            </div>
 
             <div class="form-actions">
               <button type="button" class="btn btn-secondary" @click="closeModal" :disabled="submitting">
@@ -368,12 +340,10 @@ const formData = ref({
   map_id: '',
   store_type: '0',
   type_id: '0', // 用于otherarea
-  event_type: '0', // 用于eventarea和event
+  event_type: '0', // 用于eventarea
   description: '',
   is_active: true,
-  logo_url: '',
-  start_time: '',
-  end_time: ''
+  logo_url: ''
 })
 
 // 计算属性
@@ -428,14 +398,13 @@ const loadData = async () => {
       // 按类型加载
       data = await loadByType(filters.value.type)
     } else {
-      // 加载所有类型
-      const [stores, events, eventareas, others] = await Promise.all([
+      // 加载所有类型（不包括活动）
+      const [stores, eventareas, others] = await Promise.all([
         loadStoreareas(),
-        loadEvents(),
         loadEventareas(),
         loadOtherareas()
       ])
-      data = [...stores, ...events, ...eventareas, ...others]
+      data = [...stores, ...eventareas, ...others]
     }
 
     areas.value = data
@@ -463,16 +432,7 @@ const loadStoreareas = async () => {
   }
 }
 
-const loadEvents = async () => {
-  try {
-    const response = await managementAPI.listManagementEvents()
-    const events = response.data || response
-    return events.map(item => ({ ...item, type: 'event' }))
-  } catch (error) {
-    console.error('加载活动失败:', error)
-    return []
-  }
-}
+
 
 const loadEventareas = async () => {
   try {
@@ -507,8 +467,6 @@ const loadByType = async (type) => {
   switch (type) {
     case 'storearea':
       return await loadStoreareas()
-    case 'event':
-      return await loadEvents()
     case 'eventarea':
       return await loadEventareas()
     case 'otherarea':
@@ -538,8 +496,7 @@ const getTypeLabel = (area) => {
   const baseTypeMap = {
     storearea: '店铺区域',
     eventarea: '活动区域',
-    otherarea: '其他区域',
-    event: '活动'
+    otherarea: '其他区域'
   }
 
   // 店铺区域类型映射（对应后端type字段）
@@ -591,8 +548,7 @@ const getFormLabel = (field) => {
   const typeLabels = {
     storearea: { 名称: '店铺名称', 描述: '店铺描述' },
     eventarea: { 名称: '活动区域名称', 描述: '活动区域描述' },
-    otherarea: { 名称: '其他区域名称', 描述: '其他区域描述' },
-    event: { 名称: '活动名称', 描述: '活动描述' }
+    otherarea: { 名称: '其他区域名称', 描述: '其他区域描述' }
   }
   return typeLabels[formData.value.type]?.[field] || field
 }
@@ -759,9 +715,6 @@ const handleSubmit = async () => {
         case 'storearea':
           response = await managementAPI.createManagementStorearea(submitData)
           break
-        case 'event':
-          response = await managementAPI.createManagementEvent(submitData)
-          break
         case 'eventarea':
           response = await managementAPI.createManagementEventarea(submitData)
           break
@@ -771,7 +724,7 @@ const handleSubmit = async () => {
       }
 
       // 如果创建成功且需要创建对应的几何图形（在editor模块），可以在这里处理
-      if (response && response.id && formData.value.type !== 'event') {
+      if (response && response.id) {
         // 可以提示用户需要在地图编辑器中创建几何图形
         console.log(`成功创建${getTypeLabel({ type: formData.value.type })}，ID: ${response.id}`)
       }
@@ -799,16 +752,11 @@ const toggleStatus = async (area) => {
 }
 
 const handleViewOnMap = (area) => {
-  if (area.type !== 'event') {
-    // 跳转到地图编辑器并定位到该区域
-    router.push({
-      path: '/map-editor',
-      query: { mapId: area.map_id, highlight: area.id, type: area.type }
-    })
-  } else {
-    // 对于活动类型，可能没有地图关联
-    alert('活动类型没有直接的地图关联，请查看活动详情')
-  }
+  // 跳转到地图编辑器并定位到该区域
+  router.push({
+    path: '/map-editor',
+    query: { mapId: area.map_id, highlight: area.id, type: area.type }
+  })
 }
 
 const closeModal = () => {
@@ -827,9 +775,9 @@ onMounted(() => {
 <style scoped>
 .area-management {
   padding: 20px;
-  background-color: #111827;
+  background-color: #ffffff;
   min-height: 100vh;
-  color: #f9fafb;
+  color: #1f2937;
 }
 
 .header {
@@ -842,7 +790,7 @@ onMounted(() => {
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #f9fafb;
+  color: #1f2937;
 }
 
 .actions {
@@ -903,11 +851,11 @@ onMounted(() => {
 }
 
 .filter-card {
-  background-color: #1f2937;
+  background-color: #ffffff;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
 }
 
 .filter-row {
@@ -926,16 +874,16 @@ onMounted(() => {
   display: block;
   margin-bottom: 8px;
   font-size: 14px;
-  color: #9ca3af;
+  color: #374151;
 }
 
 .filter-select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #374151;
-  background-color: #111827;
-  color: #f9fafb;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #1f2937;
   font-size: 14px;
 }
 
@@ -947,9 +895,9 @@ onMounted(() => {
   width: 100%;
   padding: 8px 12px 8px 36px;
   border-radius: 4px;
-  border: 1px solid #374151;
-  background-color: #111827;
-  color: #f9fafb;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #1f2937;
   font-size: 14px;
 }
 
@@ -958,7 +906,7 @@ onMounted(() => {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .status-buttons {
@@ -988,36 +936,38 @@ onMounted(() => {
 }
 
 .table-container {
-  background-color: #1f2937;
+  background-color: #ffffff;
   border-radius: 8px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
   overflow: hidden;
 }
 
 .table-header {
-  background-color: #374151;
+  background-color: #f3f4f6;
 }
 
 .table-row {
   display: flex;
   padding: 16px 20px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-row {
   font-weight: 600;
-  color: #d1d5db;
-  background-color: #374151;
+  color: #374151;
+  background-color: #f3f4f6;
 }
 
 .table-cell {
   padding: 0 8px;
   display: flex;
   align-items: center;
+  font-size: 14px;
+  color: #1f2937;
 }
 
 .data-row:hover {
-  background-color: #2d3748;
+  background-color: #f9fafb;
 }
 
 .area-name {

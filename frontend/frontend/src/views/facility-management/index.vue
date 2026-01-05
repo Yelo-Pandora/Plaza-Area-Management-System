@@ -214,7 +214,7 @@
               </select>
             </div>
 
-            
+
 
             <div class="form-group">
               <label class="form-label">状态</label>
@@ -440,7 +440,7 @@ const handleSubmit = async () => {
         // 如果更改了楼层，使用专门的楼层更新API
         await managementAPI.updateManagementFacilityFloor(formData.value.id, parseInt(formData.value.map_id))
       }
-      
+
       // 更新其他属性
       await managementAPI.updateManagementFacility(formData.value.id, submitData)
     } else {
@@ -502,9 +502,9 @@ onMounted(() => {
 <style scoped>
 .facility-management {
   padding: 20px;
-  background-color: #111827;
+  background-color: #ffffff;
   min-height: 100vh;
-  color: #f9fafb;
+  color: #1f2937;
 }
 
 .header {
@@ -517,7 +517,7 @@ onMounted(() => {
 .title {
   font-size: 24px;
   font-weight: 600;
-  color: #f9fafb;
+  color: #1f2937;
 }
 
 .actions {
@@ -578,11 +578,11 @@ onMounted(() => {
 }
 
 .filter-card {
-  background-color: #1f2937;
+  background-color: #ffffff;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 24px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
 }
 
 .filter-row {
@@ -601,16 +601,16 @@ onMounted(() => {
   display: block;
   margin-bottom: 8px;
   font-size: 14px;
-  color: #9ca3af;
+  color: #374151;
 }
 
 .filter-select {
   width: 100%;
   padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid #374151;
-  background-color: #111827;
-  color: #f9fafb;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #1f2937;
   font-size: 14px;
 }
 
@@ -628,11 +628,11 @@ onMounted(() => {
 .search-input {
   width: 100%;
   padding: 8px 12px 8px 36px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 14px;
-  background-color: #111827;
-  color: #f9fafb;
+  background-color: #ffffff;
+  color: #1f2937;
 }
 
 .search-input:focus {
@@ -676,26 +676,26 @@ onMounted(() => {
 }
 
 .table-container {
-  background-color: #1f2937;
+  background-color: #ffffff;
   border-radius: 8px;
-  border: 1px solid #374151;
+  border: 1px solid #d1d5db;
   overflow: hidden;
 }
 
 .table-header {
-  background-color: #374151;
+  background-color: #f3f4f6;
 }
 
 .table-row {
   display: flex;
   padding: 16px 20px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-row {
   font-weight: 600;
-  color: #d1d5db;
-  background-color: #374151;
+  color: #374151;
+  background-color: #f3f4f6;
 }
 
 .table-cell {
@@ -703,11 +703,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   font-size: 14px;
-  color: #d1d5db;
+  color: #1f2937;
 }
 
 .data-row:hover {
-  background-color: #2d3748;
+  background-color: #f9fafb;
 }
 
 .facility-name {
