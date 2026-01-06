@@ -1,4 +1,4 @@
-//·1111
+//navigation/index.js
 const util = require('../../utils/util')
 
 const FACILITY_TYPE_MAP = {
