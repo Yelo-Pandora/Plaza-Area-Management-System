@@ -7,7 +7,15 @@ def get_eventarea_serializer():
     Eventarea = apps.get_model('core', 'Eventarea')
     
     class EventareaSerializer(serializers.ModelSerializer):
-        map_id = serializers.IntegerField(source='eventareamap_set.first.map_id', read_only=True)
+        map_id = serializers.SerializerMethodField()
+        
+        def get_map_id(self, obj):
+            """安全获取地图ID，如果不存在关联记录则返回None"""
+            try:
+                first_map = obj.eventareamap_set.first()
+                return first_map.map_id if first_map else None
+            except:
+                return None
         
         class Meta:
             model = Eventarea
@@ -21,7 +29,15 @@ def get_otherarea_serializer():
     Otherarea = apps.get_model('core', 'Otherarea')
     
     class OtherareaSerializer(serializers.ModelSerializer):
-        map_id = serializers.IntegerField(source='otherareamap_set.first.map_id', read_only=True)
+        map_id = serializers.SerializerMethodField()
+        
+        def get_map_id(self, obj):
+            """安全获取地图ID，如果不存在关联记录则返回None"""
+            try:
+                first_map = obj.otherareamap_set.first()
+                return first_map.map_id if first_map else None
+            except:
+                return None
         
         class Meta:
             model = Otherarea
@@ -47,7 +63,15 @@ def get_storearea_serializer():
     Storearea = apps.get_model('core', 'Storearea')
     
     class StoreareaSerializer(serializers.ModelSerializer):
-        map_id = serializers.IntegerField(source='storeareamap_set.first.map_id', read_only=True)
+        map_id = serializers.SerializerMethodField()
+        
+        def get_map_id(self, obj):
+            """安全获取地图ID，如果不存在关联记录则返回None"""
+            try:
+                first_map = obj.storeareamap_set.first()
+                return first_map.map_id if first_map else None
+            except:
+                return None
         
         class Meta:
             model = Storearea
@@ -61,7 +85,15 @@ def get_facility_serializer():
     Facility = apps.get_model('core', 'Facility')
     
     class FacilitySerializer(serializers.ModelSerializer):
-        map_id = serializers.IntegerField(source='facilitymap_set.first.map_id', read_only=True)
+        map_id = serializers.SerializerMethodField()
+        
+        def get_map_id(self, obj):
+            """安全获取地图ID，如果不存在关联记录则返回None"""
+            try:
+                first_map = obj.facilitymap_set.first()
+                return first_map.map_id if first_map else None
+            except:
+                return None
         
         class Meta:
             model = Facility

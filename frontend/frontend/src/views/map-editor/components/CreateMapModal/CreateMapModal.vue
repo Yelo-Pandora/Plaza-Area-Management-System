@@ -13,11 +13,11 @@
           <!-- 1. 建筑选择 (暂硬编码，实际可调API) -->
           <div class="form-group">
             <label class="form-label">所属建筑</label>
-            <select v-model="form.building_id" class="form-select" required>
-              <option value="" disabled>请选择建筑</option>
-              <option value="1">测试万达广场</option>
-              <option value="2">银泰中心</option>
-            </select>
+              <select v-model="form.building_id" class="form-select" required>
+                <option value="" disabled>请选择建筑</option>
+                <!-- 对应数据库 ID 1 -->
+                <option value="1">Benchmark Mega Mall</option>
+              </select>
           </div>
 
           <!-- 2. 楼层输入 -->
