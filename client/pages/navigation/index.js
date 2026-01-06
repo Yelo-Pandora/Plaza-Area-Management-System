@@ -1,4 +1,3 @@
-//·1111
 const util = require('../../utils/util')
 
 const FACILITY_TYPE_MAP = {
